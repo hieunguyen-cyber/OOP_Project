@@ -24,7 +24,6 @@ public class CrawlControlPanel extends JPanel {
     private JLabel statusLabel;
     private JProgressBar progressBar;
     private JButton crawlButton;
-    private JButton clearButton;
     private JTextArea postUrlField;
     private JButton crawlUrlButton;
     private JComboBox<String> disasterTypeCombo;
@@ -137,14 +136,6 @@ public class CrawlControlPanel extends JPanel {
         JLabel section3Label = new JLabel("UTILITIES");
         section3Label.setFont(new Font("Arial", Font.BOLD, 11));
         panel.add(section3Label);
-        panel.add(Box.createVerticalStrut(8));
-
-        // Clear button
-        clearButton = new JButton("Clear All Data");
-        clearButton.setMaximumSize(new Dimension(250, 40));
-        clearButton.addActionListener(e -> clearAllData());
-        panel.add(clearButton);
-
         panel.add(Box.createVerticalGlue());
 
         return panel;
@@ -556,22 +547,6 @@ public class CrawlControlPanel extends JPanel {
         }
 
         crawlResultsArea.setText(results.toString());
-    }
-
-    private void clearAllData() {
-        int confirm = JOptionPane.showConfirmDialog(
-            this,
-            "Are you sure you want to clear all data?",
-            "Confirm Clear",
-            JOptionPane.YES_NO_OPTION
-        );
-
-        if (confirm == JOptionPane.YES_OPTION) {
-            model.clearPosts();
-            crawlResultsArea.setText("All data cleared.\n");
-            statusLabel.setText("Data cleared");
-            progressBar.setValue(0);
-        }
     }
 
     /**

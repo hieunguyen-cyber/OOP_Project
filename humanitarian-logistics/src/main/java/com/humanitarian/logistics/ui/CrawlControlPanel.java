@@ -22,7 +22,6 @@ public class CrawlControlPanel extends JPanel {
     private JLabel statusLabel;
     private JProgressBar progressBar;
     private JButton crawlButton;
-    private JButton clearButton;
     private JTextArea postUrlField;
     private JButton crawlUrlButton;
     private JComboBox<String> disasterTypeCombo;
@@ -141,13 +140,6 @@ public class CrawlControlPanel extends JPanel {
         mockButton.setMaximumSize(new Dimension(250, 40));
         mockButton.addActionListener(e -> loadSampleData());
         panel.add(mockButton);
-        panel.add(Box.createVerticalStrut(5));
-
-        // Clear button
-        clearButton = new JButton("Clear All Data");
-        clearButton.setMaximumSize(new Dimension(250, 40));
-        clearButton.addActionListener(e -> clearAllData());
-        panel.add(clearButton);
 
         panel.add(Box.createVerticalGlue());
 
@@ -577,22 +569,6 @@ public class CrawlControlPanel extends JPanel {
 
         } catch (Exception e) {
             statusLabel.setText("✗ Error loading sample data: " + e.getMessage());
-        }
-    }
-
-    private void clearAllData() {
-        int confirm = JOptionPane.showConfirmDialog(
-            this,
-            "Are you sure you want to clear all data?",
-            "Confirm Clear",
-            JOptionPane.YES_NO_OPTION
-        );
-
-        if (confirm == JOptionPane.YES_OPTION) {
-            model.clearPosts();
-            crawlResultsArea.setText("All data cleared.\n");
-            statusLabel.setText("Data cleared");
-            progressBar.setValue(0);
         }
     }
 

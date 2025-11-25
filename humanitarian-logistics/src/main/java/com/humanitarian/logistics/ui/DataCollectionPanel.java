@@ -135,13 +135,6 @@ public class DataCollectionPanel extends JPanel {
         panel.add(addButton);
         panel.add(Box.createVerticalStrut(5));
 
-        // Clear button
-        JButton clearButton = new JButton("Clear Form");
-        clearButton.setMaximumSize(new Dimension(200, 40));
-        clearButton.addActionListener(e -> clearForm());
-        panel.add(clearButton);
-        panel.add(Box.createVerticalStrut(5));
-
         // Batch import (future feature)
         JButton statsButton = new JButton("Show Data Statistics");
         statsButton.setMaximumSize(new Dimension(200, 40));

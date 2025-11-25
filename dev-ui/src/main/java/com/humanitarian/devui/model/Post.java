@@ -97,6 +97,19 @@ public abstract class Post implements Serializable, Comparable<Post> {
         }
     }
 
+    public void removeComment(String commentId) {
+        this.comments.removeIf(c -> c.getCommentId().equals(commentId));
+    }
+
+    public void updateComment(Comment updatedComment) {
+        for (int i = 0; i < this.comments.size(); i++) {
+            if (this.comments.get(i).getCommentId().equals(updatedComment.getCommentId())) {
+                this.comments.set(i, updatedComment);
+                break;
+            }
+        }
+    }
+
     @Override
     public int compareTo(Post other) {
         return this.createdAt.compareTo(other.createdAt);
