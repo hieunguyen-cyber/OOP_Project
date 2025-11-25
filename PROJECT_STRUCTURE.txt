@@ -1,0 +1,169 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║         HUMANITARIAN LOGISTICS - PROJECT STRUCTURE                         ║
+║                                                                            ║
+║  For One-Time Setup on New Machine                                         ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+📦 PROJECT ROOT
+├── install.sh                    ← Run this for first-time setup!
+├── README.md                     ← Quick start guide
+├── LICENSE                       ← Project license
+├── .gitignore                    ← Git ignore rules
+│
+└── humanitarian-logistics/       ← Main application folder
+    ├── run.sh                    ← Launch app (auto-checks for first-run)
+    ├── pom.xml                   ← Maven configuration
+    │
+    ├── src/
+    │   ├── main/
+    │   │   ├── java/
+    │   │   │   └── com/humanitarian/logistics/
+    │   │   │       ├── HumanitarianLogisticsApp.java  ← Main entry point
+    │   │   │       ├── model/               ← Data models
+    │   │   │       │   ├── Post.java
+    │   │   │       │   ├── Comment.java
+    │   │   │       │   ├── Sentiment.java
+    │   │   │       │   ├── ReliefItem.java
+    │   │   │       │   ├── FacebookPost.java
+    │   │   │       │   └── DisasterManager.java
+    │   │   │       ├── ui/                  ← User Interface
+    │   │   │       │   ├── View.java
+    │   │   │       │   ├── Model.java
+    │   │   │       │   ├── DataCollectionPanel.java
+    │   │   │       │   ├── AnalysisPanel.java
+    │   │   │       │   ├── CrawlControlPanel.java
+    │   │   │       │   └── [other UI classes]
+    │   │   │       ├── analysis/            ← Analysis modules
+    │   │   │       │   ├── AnalysisModule.java
+    │   │   │       │   ├── SatisfactionAnalysisModule.java
+    │   │   │       │   └── TimeSeriesSentimentModule.java
+    │   │   │       ├── sentiment/           ← Sentiment analysis
+    │   │   │       │   ├── SentimentAnalyzer.java
+    │   │   │       │   ├── SimpleSentimentAnalyzer.java
+    │   │   │       │   └── PythonSentimentAnalyzer.java
+    │   │   │       ├── database/            ← Database management
+    │   │   │       │   ├── DatabaseManager.java
+    │   │   │       │   └── DatabaseLoader.java (loads 31 curated posts)
+    │   │   │       ├── crawler/             ← Data crawlers
+    │   │   │       │   ├── DataCrawler.java
+    │   │   │       │   ├── FacebookCrawler.java
+    │   │   │       │   └── MockDataCrawler.java
+    │   │   │       └── preprocessor/        ← Text processing
+    │   │   │           ├── TextPreprocessor.java
+    │   │   │           ├── BasicTextPreprocessor.java
+    │   │   │           └── ReliefItemClassifier.java
+    │   │   │
+    │   │   ├── python/
+    │   │   │   ├── sentiment_api.py        ← Python sentiment analysis
+    │   │   │   └── requirements.txt
+    │   │   │
+    │   │   └── resources/                  ← Application resources
+    │   │
+    │   └── test/
+    │       └── java/                       ← Test classes
+    │
+    ├── target/                 ← Build output (generated, not in repo)
+    │   ├── classes/
+    │   ├── generated-sources/
+    │   └── *.jar
+    │
+    ├── humanitarian_logistics_user.db      ← User data (created at runtime)
+    └── humanitarian_logistics_curated.db   ← Curated data (created at runtime)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🚀 FIRST-TIME SETUP FLOW:
+
+1. User extracts/clones the project on a new machine
+
+2. User runs: bash install.sh
+
+3. install.sh:
+   ✓ Checks for Java 11+     (installs if missing)
+   ✓ Checks for Maven 3.6+   (installs if missing)
+   ✓ Checks for Python 3.9+  (installs if missing)
+   ✓ Runs: mvn clean package (builds the app)
+   ✓ Creates data files
+   ✓ Creates .installed marker file
+   ✓ Calls: bash humanitarian-logistics/run.sh
+
+4. humanitarian-logistics/run.sh:
+   ✓ Checks for .installed marker
+   ✓ If exists: continues with normal launch
+   ✓ If missing: calls ../install.sh again
+   ✓ Builds app with Maven
+   ✓ Launches Java app: mvn exec:java
+
+5. Application starts with Swing GUI
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+�� KEY FEATURES:
+
+• Data Collection Panel
+  - Manually add posts and comments
+  - Choose relief categories (Medical, Shelter, Food, etc.)
+  - Set sentiment scores
+
+• Use Our Database Button
+  - Loads 31 curated posts
+  - Covers all 4 disaster types:
+    * YAGI (8 posts, Sept-Oct 2024)
+    * FLOOD (9 posts, Nov-Dec 2024)
+    * MATMO (9 posts, June-July 2025)
+    * DISASTER (5 posts, Jan-Mar 2025)
+
+• Analysis Modules
+  - Problem 1: Satisfaction analysis by relief category
+  - Problem 2: Temporal sentiment evolution
+  - Statistics and visualizations
+
+• Database Integration
+  - SQLite for persistent user data
+  - In-memory model for analysis
+  - Two separate DB files for isolation
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ FILES TO INCLUDE IN DISTRIBUTION:
+
+✓ install.sh                           (main installer)
+✓ README.md                            (quick start)
+✓ .gitignore                           (for git)
+✓ humanitarian-logistics/              (application source)
+✓ LICENSE                              (project license)
+
+❌ FILES TO EXCLUDE (generated, not needed):
+
+✗ target/                              (build artifacts)
+✗ *.class                              (compiled classes)
+✗ *.jar                                (JAR files)
+✗ *.db                                 (database files)
+✗ .installed                           (runtime marker)
+✗ .md files in humanitarian-logistics/ (doc files)
+✗ test files (.java test files)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🔧 DEPENDENCIES INSTALLED BY install.sh:
+
+Java (OpenJDK 11):
+  - javac compiler
+  - java runtime
+  - jvm libraries
+
+Maven (3.6+):
+  - Maven build system
+  - Dependency management
+  - Plugin execution
+
+Python (3.9+):
+  - python3 interpreter
+  - pip package manager
+  - Required for sentiment_api.py
+
+═══════════════════════════════════════════════════════════════════════════════
