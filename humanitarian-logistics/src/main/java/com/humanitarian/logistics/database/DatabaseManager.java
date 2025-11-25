@@ -163,9 +163,18 @@ public class DatabaseManager {
         }
     }
 
-    public void close() throws SQLException {
-        if (connection != null && !connection.isClosed()) {
-            connection.close();
+    public void close() {
+        if (connection != null) {
+            try {
+                if (!connection.isClosed()) {
+                    connection.close();
+                    System.out.println("Database connection closed");
+                }
+            } catch (SQLException e) {
+                System.err.println("Error closing database connection: " + e.getMessage());
+            } catch (Exception e) {
+                System.err.println("Unexpected error during database cleanup: " + e.getMessage());
+            }
         }
     }
 }
