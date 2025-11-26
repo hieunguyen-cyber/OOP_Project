@@ -4,6 +4,7 @@ import com.humanitarian.logistics.model.*;
 import com.humanitarian.logistics.sentiment.SentimentAnalyzer;
 import com.humanitarian.logistics.preprocessor.ReliefItemClassifier;
 import com.humanitarian.logistics.database.DatabaseManager;
+import com.humanitarian.logistics.database.DataPersistenceManager;
 import com.humanitarian.logistics.analysis.*;
 
 import java.util.*;
@@ -17,6 +18,7 @@ public class Model {
     private SentimentAnalyzer sentimentAnalyzer;
     private ReliefItemClassifier reliefClassifier;
     private DatabaseManager dbManager;
+    private DataPersistenceManager persistenceManager;
     private Map<String, AnalysisModule> analysisModules;
     private List<ModelListener> listeners;
 
@@ -26,8 +28,12 @@ public class Model {
         this.analysisModules = new LinkedHashMap<>();
         this.reliefClassifier = new ReliefItemClassifier();
         this.dbManager = new DatabaseManager();
+        this.persistenceManager = new DataPersistenceManager();
 
         registerAnalysisModules();
+        
+        // Load persisted data
+        loadPersistedData();
     }
 
     private void registerAnalysisModules() {
@@ -147,5 +153,40 @@ public class Model {
             super(comment.getCommentId(), comment.getContent(), comment.getCreatedAt(),
                     comment.getAuthor(), "ADAPTER");
         }
+    }
+
+    /**
+     * Load persisted data from local cache
+     */
+    private void loadPersistedData() {
+        List<Post> loadedPosts = persistenceManager.loadPosts();
+        if (!loadedPosts.isEmpty()) {
+            posts.addAll(loadedPosts);
+            notifyListeners();
+            System.out.println("✓ Persisted data loaded: " + loadedPosts.size() + " posts");
+        }
+    }
+
+    /**
+     * Save all posts to persistent storage
+     */
+    public void savePersistedData() {
+        persistenceManager.savePosts(posts);
+    }
+
+    /**
+     * Clear all persisted data
+     */
+    public void clearPersistedData() {
+        persistenceManager.clearAllData();
+        posts.clear();
+        notifyListeners();
+    }
+
+    /**
+     * Get persistence manager
+     */
+    public DataPersistenceManager getPersistenceManager() {
+        return persistenceManager;
     }
 }

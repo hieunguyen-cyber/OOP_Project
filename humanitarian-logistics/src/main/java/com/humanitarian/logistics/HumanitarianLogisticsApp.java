@@ -4,6 +4,7 @@ import com.humanitarian.logistics.ui.Model;
 import com.humanitarian.logistics.ui.View;
 import com.humanitarian.logistics.model.*;
 import com.humanitarian.logistics.sentiment.SimpleSentimentAnalyzer;
+import com.humanitarian.logistics.database.DataPersistenceManager;
 
 /**
  * Main application entry point.
@@ -13,7 +14,11 @@ public class HumanitarianLogisticsApp {
     public static void main(String[] args) {
         try {
             // Initialize DisasterManager with disaster types
-            DisasterManager.getInstance();
+            DisasterManager disasterManager = DisasterManager.getInstance();
+            
+            // Load persisted custom disaster types
+            DataPersistenceManager persistenceManager = new DataPersistenceManager();
+            persistenceManager.loadDisasters(disasterManager);
             
             // Initialize MVC components
             Model model = new Model();

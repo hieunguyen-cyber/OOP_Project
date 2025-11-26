@@ -4,6 +4,7 @@ import com.humanitarian.devui.model.*;
 import com.humanitarian.devui.sentiment.SentimentAnalyzer;
 import com.humanitarian.devui.preprocessor.ReliefItemClassifier;
 import com.humanitarian.devui.database.DatabaseManager;
+import com.humanitarian.devui.database.DataPersistenceManager;
 import com.humanitarian.devui.analysis.*;
 
 import java.util.*;
@@ -19,6 +20,7 @@ public class Model {
     private DatabaseManager dbManager;
     private Map<String, AnalysisModule> analysisModules;
     private List<ModelListener> listeners;
+    private DataPersistenceManager persistenceManager;
 
     public Model() {
         this.posts = new ArrayList<>();
@@ -26,8 +28,10 @@ public class Model {
         this.analysisModules = new LinkedHashMap<>();
         this.reliefClassifier = new ReliefItemClassifier();
         this.dbManager = new DatabaseManager();
+        this.persistenceManager = new DataPersistenceManager();
 
         registerAnalysisModules();
+        loadPersistedData();
     }
 
     private void registerAnalysisModules() {
@@ -147,5 +151,27 @@ public class Model {
             super(comment.getCommentId(), comment.getContent(), comment.getCreatedAt(),
                     comment.getAuthor(), "ADAPTER");
         }
+    }
+
+    public void loadPersistedData() {
+        List<Post> loadedPosts = persistenceManager.loadPosts();
+        if (loadedPosts != null && !loadedPosts.isEmpty()) {
+            this.posts = new ArrayList<>(loadedPosts);
+            notifyListeners();
+        }
+    }
+
+    public void savePersistedData() {
+        persistenceManager.savePosts(new ArrayList<>(posts));
+    }
+
+    public void clearPersistedData() {
+        persistenceManager.clearAllData();
+        this.posts.clear();
+        notifyListeners();
+    }
+
+    public DataPersistenceManager getPersistenceManager() {
+        return persistenceManager;
     }
 }

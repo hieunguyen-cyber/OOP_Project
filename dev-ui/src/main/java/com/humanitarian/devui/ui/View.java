@@ -17,6 +17,7 @@ public class View extends JFrame implements ModelListener {
     private CrawlControlPanel crawlPanel;
     private DataCollectionPanel dataCollectionPanel;
     private CommentManagementPanel commentPanel;
+    private DisasterManagementPanel disasterPanel;
     private JLabel statusLabel;
     private JButton saveButton;
     private JButton cancelButton;
@@ -67,6 +68,10 @@ public class View extends JFrame implements ModelListener {
         // Tab 3: Comment Management (Excel-style)
         commentPanel = new CommentManagementPanel(model, dataBuffer);
         mainTabbedPane.addTab("💬 Comments Manager", commentPanel);
+
+        // Tab 4: Disaster Management
+        disasterPanel = new DisasterManagementPanel(model);
+        mainTabbedPane.addTab("⚠️ Disaster Management", disasterPanel);
 
         mainPanel.add(mainTabbedPane, BorderLayout.CENTER);
 
@@ -290,6 +295,15 @@ public class View extends JFrame implements ModelListener {
     private void cleanupAndExit() {
         try {
             System.out.println("Cleaning up resources...");
+            
+            // Save persisted data before exit
+            try {
+                model.savePersistedData();
+                model.getPersistenceManager().saveDisasters(DisasterManager.getInstance());
+                System.out.println("✓ Data saved successfully");
+            } catch (Exception e) {
+                System.err.println("Warning: Could not save data: " + e.getMessage());
+            }
             
             // Suppress any cleanup errors to prevent "Errors during cleaning null"
             try {

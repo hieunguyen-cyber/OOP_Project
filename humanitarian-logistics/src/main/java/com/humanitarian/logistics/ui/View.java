@@ -16,6 +16,7 @@ public class View extends JFrame implements ModelListener {
     private DataCollectionPanel dataCollectionPanel;
     private AdvancedAnalysisPanel advancedAnalysisPanel;
     private CommentManagementPanel commentPanel;
+    private DisasterManagementPanel disasterPanel;
     private JLabel statusLabel;
 
     public View(Model model) {
@@ -64,7 +65,11 @@ public class View extends JFrame implements ModelListener {
         commentPanel = new CommentManagementPanel(model);
         mainTabbedPane.addTab("💬 Comments Manager", commentPanel);
 
-        // Tab 4: Advanced Analysis
+        // Tab 4: Disaster Management
+        disasterPanel = new DisasterManagementPanel(model);
+        mainTabbedPane.addTab("⚠️ Disaster Management", disasterPanel);
+
+        // Tab 5: Advanced Analysis
         advancedAnalysisPanel = new AdvancedAnalysisPanel(model);
         mainTabbedPane.addTab("📊 Analysis", advancedAnalysisPanel);
 
@@ -143,7 +148,15 @@ public class View extends JFrame implements ModelListener {
 
     private void cleanupAndExit() {
         try {
-            System.out.println("Cleaning up resources...");
+            System.out.println("Saving data before exit...");
+            
+            // Save persisted data
+            model.savePersistedData();
+            
+            // Save custom disaster types
+            com.humanitarian.logistics.database.DataPersistenceManager persistenceManager = 
+                model.getPersistenceManager();
+            persistenceManager.saveDisasters(com.humanitarian.logistics.model.DisasterManager.getInstance());
             
             // Suppress any cleanup errors to prevent "Errors during cleaning null"
             try {

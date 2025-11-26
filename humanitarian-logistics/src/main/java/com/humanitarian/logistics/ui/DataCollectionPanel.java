@@ -6,6 +6,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 /**
  * Panel for collecting new post data directly from the UI.
@@ -15,12 +16,13 @@ public class DataCollectionPanel extends JPanel {
     private Model model;
     private JTextArea contentArea;
     private JTextField authorField;
-    private JTextField keywordField;
+    private JComboBox<String> disasterTypeCombo;
     private JComboBox<ReliefItem.Category> categoryCombo;
     private JComboBox<Sentiment.SentimentType> sentimentCombo;
     private JSpinner confidenceSpinner;
     private JCheckBox isCommentCheckBox;
     private JTextField parentPostIdField;
+    private JSpinner dateSpinner;
     private JLabel statusLabel;
 
     public DataCollectionPanel(Model model) {
@@ -67,10 +69,21 @@ public class DataCollectionPanel extends JPanel {
         panel.add(authorField);
         panel.add(Box.createVerticalStrut(8));
 
-        // Keyword/Source field
-        panel.add(new JLabel("Disaster Keyword (e.g., #yagi, #bualoi):"));
-        keywordField = new JTextField(20);
-        panel.add(keywordField);
+        // Date field (yyyy-MM-dd format)
+        panel.add(new JLabel("Date (yyyy-MM-dd): *"));
+        dateSpinner = new JSpinner(new SpinnerDateModel());
+        JSpinner.DateEditor dateEditor = new JSpinner.DateEditor(dateSpinner, "yyyy-MM-dd");
+        dateSpinner.setEditor(dateEditor);
+        dateSpinner.setValue(new java.util.Date());
+        panel.add(dateSpinner);
+        panel.add(Box.createVerticalStrut(8));
+
+        // Disaster Type Dropdown
+        panel.add(new JLabel("Disaster Type: *"));
+        disasterTypeCombo = new JComboBox<>();
+        updateDisasterTypeCombo();
+        disasterTypeCombo.setMaximumSize(new Dimension(300, 25));
+        panel.add(disasterTypeCombo);
         panel.add(Box.createVerticalStrut(8));
 
         // Relief Category
@@ -162,10 +175,11 @@ public class DataCollectionPanel extends JPanel {
     private void addPostOrComment(JTextArea previewArea) {
         String content = contentArea.getText().trim();
         String author = authorField.getText().trim();
-        String keyword = keywordField.getText().trim();
+        String selectedDisaster = (String) disasterTypeCombo.getSelectedItem();
         ReliefItem.Category category = (ReliefItem.Category) categoryCombo.getSelectedItem();
         Sentiment.SentimentType sentimentType = (Sentiment.SentimentType) sentimentCombo.getSelectedItem();
         double confidence = ((Number) confidenceSpinner.getValue()).doubleValue();
+        java.util.Date selectedDate = (java.util.Date) dateSpinner.getValue();
 
         // Validation
         if (content.isEmpty()) {
@@ -177,9 +191,15 @@ public class DataCollectionPanel extends JPanel {
             author = "User " + System.currentTimeMillis() % 1000;
         }
 
-        if (keyword.isEmpty()) {
-            keyword = "general";
+        if (selectedDisaster == null || selectedDisaster.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please select a Disaster Type", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            return;
         }
+
+        // Convert java.util.Date to LocalDateTime
+        LocalDateTime postDateTime = selectedDate.toInstant()
+            .atZone(java.time.ZoneId.systemDefault())
+            .toLocalDateTime();
 
         try {
             if (isCommentCheckBox.isSelected()) {
@@ -197,7 +217,7 @@ public class DataCollectionPanel extends JPanel {
                     "COMMENT_" + System.currentTimeMillis(),
                     parentPostId,
                     content,
-                    LocalDateTime.now(),
+                    postDateTime,
                     author
                 );
                 comment.setSentiment(sentiment);
@@ -206,9 +226,9 @@ public class DataCollectionPanel extends JPanel {
                 FacebookPost post = new FacebookPost(
                     parentPostId,
                     content,
-                    LocalDateTime.now(),
+                    postDateTime,
                     author,
-                    "PAGE_" + keyword
+                    "PAGE_" + selectedDisaster
                 );
                 post.setSentiment(sentiment);
                 post.setReliefItem(reliefItem);
@@ -224,9 +244,9 @@ public class DataCollectionPanel extends JPanel {
                 FacebookPost post = new FacebookPost(
                     "POST_" + System.currentTimeMillis(),
                     content,
-                    LocalDateTime.now(),
+                    postDateTime,
                     author,
-                    "PAGE_" + keyword
+                    "PAGE_" + selectedDisaster
                 );
                 post.setSentiment(sentiment);
                 post.setReliefItem(reliefItem);
@@ -246,7 +266,7 @@ public class DataCollectionPanel extends JPanel {
     private void clearForm() {
         contentArea.setText("");
         authorField.setText("");
-        keywordField.setText("");
+        dateSpinner.setValue(new java.util.Date());
         categoryCombo.setSelectedIndex(0);
         sentimentCombo.setSelectedItem(Sentiment.SentimentType.NEUTRAL);
         confidenceSpinner.setValue(0.8);
@@ -286,19 +306,71 @@ public class DataCollectionPanel extends JPanel {
         }
         
         try {
+            // Get disaster types before loading new data
+            java.util.Set<String> userDisasters = new java.util.HashSet<>(
+                DisasterManager.getInstance().getAllDisasterNames()
+            );
+            
             // Load the fixed database
             DatabaseLoader.loadOurDatabase(model);
+            
+            // Auto-detect and add missing disaster types from loaded data
+            java.util.Set<String> missingDisasters = new java.util.HashSet<>();
+            for (Post post : model.getPosts()) {
+                if (post instanceof FacebookPost) {
+                    FacebookPost fbPost = (FacebookPost) post;
+                    String pageId = fbPost.getPageId();
+                    
+                    // Extract disaster name from PAGE_xxx format
+                    if (pageId.startsWith("PAGE_")) {
+                        String disasterName = pageId.substring(5);
+                        if (!userDisasters.contains(disasterName)) {
+                            missingDisasters.add(disasterName);
+                        }
+                    }
+                }
+            }
+            
+            // Add missing disasters automatically
+            int addedCount = 0;
+            for (String disaster : missingDisasters) {
+                DisasterManager.getInstance().getOrCreateDisasterType(disaster);
+                addedCount++;
+            }
             
             // Show statistics
             showDataStatistics(previewArea);
             
-            statusLabel.setText("✓ Our database loaded successfully - " + model.getPosts().size() + " posts imported");
+            String loadMsg = "✓ Our database loaded successfully\n" +
+                            "Posts imported: " + model.getPosts().size() + "\n" +
+                            "New disaster types added: " + addedCount;
+            
+            statusLabel.setText(loadMsg);
             previewArea.insert("[" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + 
-                "] ✓ Our curated database loaded. Total posts: " + model.getPosts().size() + "\n", 0);
+                "] " + loadMsg + "\n", 0);
+            
+            JOptionPane.showMessageDialog(this, loadMsg, "Database Loaded", JOptionPane.INFORMATION_MESSAGE);
             
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error loading database: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             statusLabel.setText("✗ Error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Update the disaster type combo box with available disaster types
+     */
+    private void updateDisasterTypeCombo() {
+        disasterTypeCombo.removeAllItems();
+        
+        List<String> disasterNames = DisasterManager.getInstance().getAllDisasterNames();
+        for (String name : disasterNames) {
+            disasterTypeCombo.addItem(name);
+        }
+        
+        // Set default to "yagi"
+        if (disasterNames.contains("yagi")) {
+            disasterTypeCombo.setSelectedItem("yagi");
         }
     }
 }

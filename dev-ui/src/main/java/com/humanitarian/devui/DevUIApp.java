@@ -4,6 +4,7 @@ import com.humanitarian.devui.ui.Model;
 import com.humanitarian.devui.ui.View;
 import com.humanitarian.devui.model.*;
 import com.humanitarian.devui.database.DatabaseManager;
+import com.humanitarian.devui.database.DataPersistenceManager;
 import com.humanitarian.devui.sentiment.SimpleSentimentAnalyzer;
 
 /**
@@ -14,7 +15,11 @@ public class DevUIApp {
     public static void main(String[] args) {
         try {
             // Initialize DisasterManager with disaster types
-            DisasterManager.getInstance();
+            DisasterManager disasterManager = DisasterManager.getInstance();
+            
+            // Load persisted custom disasters before creating Model
+            DataPersistenceManager persistenceManager = new DataPersistenceManager();
+            persistenceManager.loadDisasters(disasterManager);
             
             // Initialize MVC components
             Model model = new Model();

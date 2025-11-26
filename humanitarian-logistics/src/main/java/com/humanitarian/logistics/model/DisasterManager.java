@@ -188,4 +188,13 @@ public class DisasterManager {
     public int getDisasterTypeCount() {
         return disasterTypes.size();
     }
+
+    /**
+     * Remove a disaster type by name
+     */
+    public void removeDisasterType(String name) {
+        if (name != null) {
+            disasterTypes.remove(DisasterType.normalize(name));
+        }
+    }
 }
