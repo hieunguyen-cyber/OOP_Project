@@ -7,7 +7,6 @@ import javax.swing.table.*;
 import java.awt.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 /**
  * Excel-style table panel for managing comments.
@@ -15,18 +14,15 @@ import java.util.List;
  */
 public class CommentManagementPanel extends JPanel {
     private Model model;
-    private SessionDataBuffer buffer;
     private DatabaseManager dbManager;
     private JTable commentTable;
     private DefaultTableModel tableModel;
     private JTextArea detailsArea;
     private JLabel statusLabel;
     private JLabel totalLabel;
-    private JLabel pendingLabel;
 
     public CommentManagementPanel(Model model, SessionDataBuffer buffer) {
         this.model = model;
-        this.buffer = buffer;
         try {
             this.dbManager = new DatabaseManager();
         } catch (Exception e) {
@@ -61,13 +57,9 @@ public class CommentManagementPanel extends JPanel {
         panel.setBackground(new Color(240, 240, 240));
 
         totalLabel = new JLabel("📊 ");
-        pendingLabel = new JLabel("⏳ ");
-
         updateStatsPanel();
 
         panel.add(totalLabel);
-        panel.add(new JSeparator(JSeparator.VERTICAL));
-        panel.add(pendingLabel);
         
         // Refresh button
         JButton refreshBtn = new JButton("🔄 Refresh");
@@ -84,12 +76,8 @@ public class CommentManagementPanel extends JPanel {
     }
 
     private void updateStatsPanel() {
-        int total = model.getPosts().stream().mapToInt(p -> p.getComments().size()).sum() 
-                    + buffer.getTotalComments();
-        int pending = buffer.getTotalComments();
-        
+        int total = model.getPosts().stream().mapToInt(p -> p.getComments().size()).sum();
         totalLabel.setText("Total Comments: " + total);
-        pendingLabel.setText("Pending (Unsaved): " + pending);
     }
 
     private JPanel createMainPanel() {
@@ -160,48 +148,18 @@ public class CommentManagementPanel extends JPanel {
 
     public void refreshTable() {
         tableModel.setRowCount(0);
-        
-        // Reload from database to get latest changes for saved comments
-        List<Post> allPosts = new java.util.ArrayList<>();
-        allPosts.addAll(model.getPosts());
-        try {
-            if (dbManager != null) {
-                List<Post> dbPosts = dbManager.getAllPosts();
-                // Merge DB posts with buffer posts - remove from allPosts if in DB
-                for (Post dbPost : dbPosts) {
-                    boolean found = false;
-                    for (int i = 0; i < allPosts.size(); i++) {
-                        if (allPosts.get(i).getPostId().equals(dbPost.getPostId())) {
-                            allPosts.set(i, dbPost);  // Update with fresh DB version
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        allPosts.add(dbPost);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Error reloading from database: " + e.getMessage());
-        }
 
-        // Add comments from pending buffer
-        for (Comment comment : buffer.getPendingComments()) {
-            addCommentRow(comment, true);
-        }
-
-        // Add comments from posts (both buffer and DB)
-        for (Post post : allPosts) {
+        // Add comments from all posts
+        for (Post post : model.getPosts()) {
             for (Comment comment : post.getComments()) {
-                addCommentRow(comment, false);
+                addCommentRow(comment);
             }
         }
 
         statusLabel.setText("Loaded " + tableModel.getRowCount() + " comments");
     }
 
-    private void addCommentRow(Comment comment, boolean isPending) {
+    private void addCommentRow(Comment comment) {
         String sentimentType = comment.getSentiment() != null ? 
             comment.getSentiment().getType().toString() : "N/A";
         
@@ -214,10 +172,8 @@ public class CommentManagementPanel extends JPanel {
             comment.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) :
             LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
 
-        String pendingMark = isPending ? " [⏳ PENDING]" : "";
-
         tableModel.addRow(new Object[]{
-            comment.getCommentId() + pendingMark,
+            comment.getCommentId(),
             comment.getAuthor(),
             dateStr,
             sentimentType,
@@ -226,26 +182,17 @@ public class CommentManagementPanel extends JPanel {
     }
 
     private void showCommentDetails(int row) {
-        // Get comment from buffer or model
         Comment comment = null;
-        int bufferSize = buffer.getPendingComments().size();
-
-        if (row < bufferSize) {
-            comment = buffer.getPendingComments().get(row);
-        } else {
-            // Get from model posts
-            int remaining = row - bufferSize;
-            int count = 0;
-            for (Post post : model.getPosts()) {
-                for (Comment c : post.getComments()) {
-                    if (count == remaining) {
-                        comment = c;
-                        break;
-                    }
-                    count++;
+        int count = 0;
+        for (Post post : model.getPosts()) {
+            for (Comment c : post.getComments()) {
+                if (count == row) {
+                    comment = c;
+                    break;
                 }
-                if (comment != null) break;
+                count++;
             }
+            if (comment != null) break;
         }
 
         if (comment != null) {
@@ -276,26 +223,17 @@ public class CommentManagementPanel extends JPanel {
             return;
         }
 
-        // Find comment in either buffer or model
         Comment commentToDelete = null;
-        int bufferSize = buffer.getPendingComments().size();
-        
-        if (selectedRow < bufferSize) {
-            commentToDelete = buffer.getPendingComments().get(selectedRow);
-        } else {
-            // Get from model posts
-            int remaining = selectedRow - bufferSize;
-            int count = 0;
-            for (Post post : model.getPosts()) {
-                for (Comment c : post.getComments()) {
-                    if (count == remaining) {
-                        commentToDelete = c;
-                        break;
-                    }
-                    count++;
+        int count = 0;
+        for (Post post : model.getPosts()) {
+            for (Comment c : post.getComments()) {
+                if (count == selectedRow) {
+                    commentToDelete = c;
+                    break;
                 }
-                if (commentToDelete != null) break;
+                count++;
             }
+            if (commentToDelete != null) break;
         }
 
         if (commentToDelete != null) {
@@ -304,25 +242,23 @@ public class CommentManagementPanel extends JPanel {
                 "Confirm Delete",
                 JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
-                // Remove from buffer if it's there
-                buffer.removeComment(commentToDelete.getCommentId());
-                
-                // Remove from all posts
-                for (Post post : model.getPosts()) {
-                    if (post.getPostId().equals(commentToDelete.getPostId())) {
-                        post.removeComment(commentToDelete.getCommentId());
-                        break;
-                    }
-                }
-                
-                // Delete from database
                 try {
+                    // Remove from all posts
+                    for (Post post : model.getPosts()) {
+                        if (post.getPostId().equals(commentToDelete.getPostId())) {
+                            post.removeComment(commentToDelete.getCommentId());
+                            break;
+                        }
+                    }
+                    
+                    // Delete from database
                     if (dbManager != null) {
                         dbManager.deleteComment(commentToDelete.getCommentId());
-                        refreshTable();
-                        detailsArea.setText("");
-                        statusLabel.setText("✓ Comment deleted and saved to database");
                     }
+                    
+                    refreshTable();
+                    detailsArea.setText("");
+                    statusLabel.setText("✓ Comment deleted and saved to database");
                 } catch (Exception e) {
                     JOptionPane.showMessageDialog(this, "Error deleting comment: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
@@ -337,26 +273,17 @@ public class CommentManagementPanel extends JPanel {
             return;
         }
 
-        // Find comment in either buffer or model
         Comment commentToEdit = null;
-        int bufferSize = buffer.getPendingComments().size();
-        
-        if (selectedRow < bufferSize) {
-            commentToEdit = buffer.getPendingComments().get(selectedRow);
-        } else {
-            // Get from model posts
-            int remaining = selectedRow - bufferSize;
-            int count = 0;
-            for (Post post : model.getPosts()) {
-                for (Comment c : post.getComments()) {
-                    if (count == remaining) {
-                        commentToEdit = c;
-                        break;
-                    }
-                    count++;
+        int count = 0;
+        for (Post post : model.getPosts()) {
+            for (Comment c : post.getComments()) {
+                if (count == selectedRow) {
+                    commentToEdit = c;
+                    break;
                 }
-                if (commentToEdit != null) break;
+                count++;
             }
+            if (commentToEdit != null) break;
         }
 
         if (commentToEdit != null) {
@@ -417,9 +344,6 @@ public class CommentManagementPanel extends JPanel {
                 if (comment.getReliefItem() != null) {
                     updatedComment.setReliefItem(comment.getReliefItem());
                 }
-                
-                // Update in buffer
-                buffer.updateComment(updatedComment);
                 
                 // Update in all posts
                 for (Post post : model.getPosts()) {

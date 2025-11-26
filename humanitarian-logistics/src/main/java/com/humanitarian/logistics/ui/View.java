@@ -16,7 +16,6 @@ public class View extends JFrame implements ModelListener {
     private DataCollectionPanel dataCollectionPanel;
     private AdvancedAnalysisPanel advancedAnalysisPanel;
     private CommentManagementPanel commentPanel;
-    private DisasterManagementPanel disasterPanel;
     private JLabel statusLabel;
 
     public View(Model model) {
@@ -65,11 +64,7 @@ public class View extends JFrame implements ModelListener {
         commentPanel = new CommentManagementPanel(model);
         mainTabbedPane.addTab("💬 Comments Manager", commentPanel);
 
-        // Tab 4: Disaster Management
-        disasterPanel = new DisasterManagementPanel(model);
-        mainTabbedPane.addTab("⚠️ Disaster Management", disasterPanel);
-
-        // Tab 5: Advanced Analysis
+        // Tab 4: Advanced Analysis
         advancedAnalysisPanel = new AdvancedAnalysisPanel(model);
         mainTabbedPane.addTab("📊 Analysis", advancedAnalysisPanel);
 

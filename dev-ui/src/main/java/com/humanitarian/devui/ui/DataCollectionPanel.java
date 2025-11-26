@@ -14,7 +14,6 @@ import java.util.List;
  */
 public class DataCollectionPanel extends JPanel {
     private Model model;
-    private SessionDataBuffer buffer;
     private JTextArea contentArea;
     private JTextField authorField;
     private JComboBox<String> disasterTypeCombo;
@@ -25,17 +24,15 @@ public class DataCollectionPanel extends JPanel {
     private JTextField parentPostIdField;
     private JSpinner dateSpinner;
     private JLabel statusLabel;
-    private JLabel bufferStatusLabel;
 
     public DataCollectionPanel(Model model, SessionDataBuffer buffer) {
         this.model = model;
-        this.buffer = buffer;
         initializeUI();
     }
 
     private void initializeUI() {
         setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createTitledBorder("✏️ Data Entry - Manual Post/Comment Creation"));
+        setBorder(BorderFactory.createTitledBorder("Data Collection - Manual Entry"));
 
         // Left panel - Input fields
         JPanel inputPanel = createInputPanel();
@@ -46,13 +43,8 @@ public class DataCollectionPanel extends JPanel {
         add(actionPanel, BorderLayout.CENTER);
 
         // Bottom panel - Status
-        JPanel bottomPanel = new JPanel();
-        bottomPanel.setLayout(new BorderLayout());
         statusLabel = new JLabel("Ready to add new data");
-        bufferStatusLabel = new JLabel("Buffer: 0 items");
-        bottomPanel.add(statusLabel, BorderLayout.WEST);
-        bottomPanel.add(bufferStatusLabel, BorderLayout.EAST);
-        add(bottomPanel, BorderLayout.SOUTH);
+        add(statusLabel, BorderLayout.SOUTH);
     }
 
     private JPanel createInputPanel() {
@@ -138,7 +130,7 @@ public class DataCollectionPanel extends JPanel {
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // Preview text area
-        JLabel previewLabel = new JLabel("Buffer Status & Preview:");
+        JLabel previewLabel = new JLabel("Preview & Statistics:");
         panel.add(previewLabel);
 
         JTextArea previewArea = new JTextArea(15, 40);
@@ -149,22 +141,18 @@ public class DataCollectionPanel extends JPanel {
         panel.add(Box.createVerticalStrut(10));
 
         // Add button
-        JButton addButton = new JButton("Add to Buffer");
+        JButton addButton = new JButton("Add Post/Comment");
         addButton.setFont(new Font("Arial", Font.BOLD, 12));
         addButton.setMaximumSize(new Dimension(200, 40));
-        addButton.setBackground(new Color(66, 133, 244));
-        addButton.setForeground(Color.WHITE);
-        addButton.setOpaque(true);
-        addButton.setBorderPainted(false);
         addButton.addActionListener(e -> addPostOrComment(previewArea));
         panel.add(addButton);
         panel.add(Box.createVerticalStrut(5));
 
-        // View buffer button
-        JButton viewBufferButton = new JButton("View Buffer");
-        viewBufferButton.setMaximumSize(new Dimension(200, 40));
-        viewBufferButton.addActionListener(e -> showBufferStatus(previewArea));
-        panel.add(viewBufferButton);
+        // Batch import (future feature)
+        JButton statsButton = new JButton("Show Data Statistics");
+        statsButton.setMaximumSize(new Dimension(200, 40));
+        statsButton.addActionListener(e -> showDataStatistics(previewArea));
+        panel.add(statsButton);
 
         panel.add(Box.createVerticalGlue());
 
@@ -202,7 +190,7 @@ public class DataCollectionPanel extends JPanel {
 
         try {
             if (isCommentCheckBox.isSelected()) {
-                // Add as comment to buffer
+                // Add as comment
                 String parentPostId = parentPostIdField.getText().trim();
                 if (parentPostId.isEmpty()) {
                     JOptionPane.showMessageDialog(this, "Please enter parent post ID for comment", "Validation Error", JOptionPane.WARNING_MESSAGE);
@@ -222,10 +210,21 @@ public class DataCollectionPanel extends JPanel {
                 comment.setSentiment(sentiment);
                 comment.setReliefItem(reliefItem);
 
-                buffer.addComment(comment);
-                statusLabel.setText("✓ Comment added to buffer (not yet saved to DB)");
+                FacebookPost post = new FacebookPost(
+                    parentPostId,
+                    content,
+                    postDateTime,
+                    author,
+                    "PAGE_" + selectedDisaster
+                );
+                post.setSentiment(sentiment);
+                post.setReliefItem(reliefItem);
+                post.addComment(comment);
+
+                model.addPost(post);
+                statusLabel.setText("✓ Comment added successfully");
             } else {
-                // Add as post to buffer
+                // Add as post
                 Sentiment sentiment = new Sentiment(sentimentType, confidence, content);
                 ReliefItem reliefItem = new ReliefItem(category, "Relief item", 3);
 
@@ -239,13 +238,12 @@ public class DataCollectionPanel extends JPanel {
                 post.setSentiment(sentiment);
                 post.setReliefItem(reliefItem);
 
-                buffer.addPost(post);
-                statusLabel.setText("✓ Post added to buffer (not yet saved to DB)");
+                model.addPost(post);
+                statusLabel.setText("✓ Post added: " + post.getPostId());
             }
 
             clearForm();
-            bufferStatusLabel.setText("Buffer: " + (buffer.getTotalPosts() + buffer.getTotalComments()) + " items");
-            previewArea.append("[" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "] Data added to buffer\n");
+            previewArea.append("[" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "] Data added successfully\n");
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error adding data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             statusLabel.setText("✗ Error: " + e.getMessage());
@@ -264,9 +262,21 @@ public class DataCollectionPanel extends JPanel {
         parentPostIdField.setEnabled(false);
     }
 
-    private void showBufferStatus(JTextArea previewArea) {
-        previewArea.setText(buffer.generateSummary());
-        bufferStatusLabel.setText("Buffer: " + (buffer.getTotalPosts() + buffer.getTotalComments()) + " items");
+    private void showDataStatistics(JTextArea previewArea) {
+        java.util.List<Post> posts = model.getPosts();
+        int totalPosts = posts.size();
+        int totalComments = posts.stream().mapToInt(p -> p.getComments().size()).sum();
+
+        int positive = (int) posts.stream().filter(p -> p.getSentiment().getType() == Sentiment.SentimentType.POSITIVE).count();
+        int negative = (int) posts.stream().filter(p -> p.getSentiment().getType() == Sentiment.SentimentType.NEGATIVE).count();
+        int neutral = (int) posts.stream().filter(p -> p.getSentiment().getType() == Sentiment.SentimentType.NEUTRAL).count();
+
+        previewArea.setText("=== DATA STATISTICS ===\n");
+        previewArea.append("Total Posts: " + totalPosts + "\n");
+        previewArea.append("Total Comments: " + totalComments + "\n");
+        previewArea.append("Positive: " + positive + "\n");
+        previewArea.append("Negative: " + negative + "\n");
+        previewArea.append("Neutral: " + neutral + "\n");
     }
 
     /**

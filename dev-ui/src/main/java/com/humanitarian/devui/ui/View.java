@@ -17,7 +17,6 @@ public class View extends JFrame implements ModelListener {
     private CrawlControlPanel crawlPanel;
     private DataCollectionPanel dataCollectionPanel;
     private CommentManagementPanel commentPanel;
-    private DisasterManagementPanel disasterPanel;
     private JLabel statusLabel;
     private JButton saveButton;
     private JButton cancelButton;
@@ -68,10 +67,6 @@ public class View extends JFrame implements ModelListener {
         // Tab 3: Comment Management (Excel-style)
         commentPanel = new CommentManagementPanel(model, dataBuffer);
         mainTabbedPane.addTab("💬 Comments Manager", commentPanel);
-
-        // Tab 4: Disaster Management
-        disasterPanel = new DisasterManagementPanel(model);
-        mainTabbedPane.addTab("⚠️ Disaster Management", disasterPanel);
 
         mainPanel.add(mainTabbedPane, BorderLayout.CENTER);
 
