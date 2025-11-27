@@ -1,5 +1,6 @@
 package com.humanitarian.logistics.model;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
@@ -10,7 +11,7 @@ import java.util.*;
  * - #matmo → matmo
  * - matmo → matmo
  */
-public class DisasterType {
+public class DisasterType implements Serializable {
     private final String name;
     private final Set<String> aliases; // Keywords and hashtags that map to this disaster type
 

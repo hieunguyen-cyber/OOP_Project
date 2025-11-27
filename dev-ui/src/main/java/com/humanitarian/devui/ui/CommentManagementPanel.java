@@ -12,8 +12,8 @@ import java.time.format.DateTimeFormatter;
  * Excel-style table panel for managing comments.
  * Allows users to view, edit, and manage individual comments.
  */
-public class CommentManagementPanel extends JPanel {
-    private Model model;
+public class CommentManagementPanel extends JPanel implements ModelListener {
+    private final Model model;
     private DatabaseManager dbManager;
     private JTable commentTable;
     private DefaultTableModel tableModel;
@@ -27,9 +27,11 @@ public class CommentManagementPanel extends JPanel {
             this.dbManager = new DatabaseManager();
         } catch (Exception e) {
             System.err.println("Error initializing DatabaseManager: " + e.getMessage());
+            this.dbManager = null;
         }
+        // Register as model listener to get notified of changes
+        model.addModelListener(this);
         initializeUI();
-        refreshTable();
     }
 
     private void initializeUI() {
@@ -118,7 +120,7 @@ public class CommentManagementPanel extends JPanel {
     private JPanel createDetailsPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createTitledBorder("Comment Details"));
+        panel.setBorder(BorderFactory.createTitledBorder("Comment Details & Actions"));
         panel.setPreferredSize(new Dimension(0, 200));
 
         detailsArea = new JTextArea();
@@ -131,17 +133,40 @@ public class CommentManagementPanel extends JPanel {
 
         // Action buttons
         JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 5, 5));
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 8, 5));
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         JButton deleteButton = new JButton("🗑️ Delete");
-        deleteButton.addActionListener(e -> deleteSelectedComment());
+        deleteButton.setFont(new Font("Arial", Font.BOLD, 11));
+        deleteButton.setBackground(new Color(220, 53, 69));
+        deleteButton.setForeground(Color.WHITE);
+        deleteButton.setOpaque(true);
+        deleteButton.addActionListener(e -> {
+            try {
+                deleteSelectedComment();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(), "Delete Error", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
+            }
+        });
         buttonPanel.add(deleteButton);
 
         JButton editButton = new JButton("✏️ Edit");
-        editButton.addActionListener(e -> editSelectedComment());
+        editButton.setFont(new Font("Arial", Font.BOLD, 11));
+        editButton.setBackground(new Color(0, 123, 255));
+        editButton.setForeground(Color.WHITE);
+        editButton.setOpaque(true);
+        editButton.addActionListener(e -> {
+            try {
+                editSelectedComment();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(), "Edit Error", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
+            }
+        });
         buttonPanel.add(editButton);
 
-        panel.add(buttonPanel, BorderLayout.EAST);
+        panel.add(buttonPanel, BorderLayout.SOUTH);
 
         return panel;
     }
@@ -223,12 +248,16 @@ public class CommentManagementPanel extends JPanel {
             return;
         }
 
+        // Find comment and its post
         Comment commentToDelete = null;
+        Post parentPost = null;
         int count = 0;
+        
         for (Post post : model.getPosts()) {
             for (Comment c : post.getComments()) {
                 if (count == selectedRow) {
                     commentToDelete = c;
+                    parentPost = post;
                     break;
                 }
                 count++;
@@ -236,32 +265,40 @@ public class CommentManagementPanel extends JPanel {
             if (commentToDelete != null) break;
         }
 
-        if (commentToDelete != null) {
-            int confirm = JOptionPane.showConfirmDialog(this,
-                "Delete comment from " + commentToDelete.getAuthor() + "?\nThis action will be saved to database.",
-                "Confirm Delete",
-                JOptionPane.YES_NO_OPTION);
-            if (confirm == JOptionPane.YES_OPTION) {
-                try {
-                    // Remove from all posts
-                    for (Post post : model.getPosts()) {
-                        if (post.getPostId().equals(commentToDelete.getPostId())) {
-                            post.removeComment(commentToDelete.getCommentId());
-                            break;
-                        }
-                    }
-                    
-                    // Delete from database
-                    if (dbManager != null) {
-                        dbManager.deleteComment(commentToDelete.getCommentId());
-                    }
-                    
-                    refreshTable();
-                    detailsArea.setText("");
-                    statusLabel.setText("✓ Comment deleted and saved to database");
-                } catch (Exception e) {
-                    JOptionPane.showMessageDialog(this, "Error deleting comment: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        if (commentToDelete == null) {
+            JOptionPane.showMessageDialog(this, "Comment not found", "Error", JOptionPane.ERROR_MESSAGE);
+            statusLabel.setText("✗ Error: Comment not found");
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "Delete comment from " + commentToDelete.getAuthor() + "?\n" +
+            "Content: \"" + commentToDelete.getContent().substring(0, Math.min(50, commentToDelete.getContent().length())) + "...\"\n" +
+            "This will be saved to database.",
+            "Confirm Delete",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE);
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                // Remove from model
+                if (parentPost != null) {
+                    parentPost.removeComment(commentToDelete.getCommentId());
                 }
+                
+                // Delete from database
+                if (dbManager != null) {
+                    dbManager.deleteComment(commentToDelete.getCommentId());
+                }
+                
+                // Refresh UI
+                refreshTable();
+                detailsArea.setText("");
+                statusLabel.setText("✓ Comment deleted and saved to database");
+                JOptionPane.showMessageDialog(this, "✓ Comment deleted successfully", "Success", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "Error deleting comment: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                statusLabel.setText("✗ Error deleting comment: " + e.getMessage());
             }
         }
     }
@@ -273,12 +310,16 @@ public class CommentManagementPanel extends JPanel {
             return;
         }
 
+        // Find comment and its post
         Comment commentToEdit = null;
+        Post parentPost = null;
         int count = 0;
+        
         for (Post post : model.getPosts()) {
             for (Comment c : post.getComments()) {
                 if (count == selectedRow) {
                     commentToEdit = c;
+                    parentPost = post;
                     break;
                 }
                 count++;
@@ -286,26 +327,33 @@ public class CommentManagementPanel extends JPanel {
             if (commentToEdit != null) break;
         }
 
-        if (commentToEdit != null) {
-            showEditDialog(commentToEdit);
+        if (commentToEdit == null) {
+            JOptionPane.showMessageDialog(this, "Comment not found", "Error", JOptionPane.ERROR_MESSAGE);
+            statusLabel.setText("✗ Error: Comment not found");
+            return;
+        }
+
+        if (commentToEdit != null && parentPost != null) {
+            showEditDialog(commentToEdit, parentPost);
         }
     }
 
-    private void showEditDialog(Comment comment) {
+    private void showEditDialog(Comment comment, Post parentPost) {
         JDialog dialog = new JDialog((JFrame) SwingUtilities.getWindowAncestor(this), "Edit Comment", true);
-        dialog.setSize(600, 400);
+        dialog.setSize(600, 450);
         dialog.setLocationRelativeTo(this);
 
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
         // Content
-        panel.add(new JLabel("Content:"));
+        panel.add(new JLabel("Comment Content:"));
         JTextArea contentArea = new JTextArea(5, 50);
         contentArea.setText(comment.getContent());
         contentArea.setLineWrap(true);
         contentArea.setWrapStyleWord(true);
+        contentArea.setFont(new Font("Arial", Font.PLAIN, 11));
         panel.add(new JScrollPane(contentArea));
         panel.add(Box.createVerticalStrut(10));
 
@@ -313,25 +361,39 @@ public class CommentManagementPanel extends JPanel {
         panel.add(new JLabel("Sentiment:"));
         JComboBox<Sentiment.SentimentType> sentimentCombo = new JComboBox<>(Sentiment.SentimentType.values());
         sentimentCombo.setSelectedItem(comment.getSentiment().getType());
+        sentimentCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
         panel.add(sentimentCombo);
         panel.add(Box.createVerticalStrut(10));
 
         // Confidence
-        panel.add(new JLabel("Confidence:"));
-        JSpinner confidenceSpinner = new JSpinner(new SpinnerNumberModel(comment.getSentiment().getConfidence(), 0.0, 1.0, 0.1));
+        panel.add(new JLabel("Confidence (0.0 - 1.0):"));
+        JSpinner confidenceSpinner = new JSpinner(new SpinnerNumberModel(
+            comment.getSentiment().getConfidence(), 0.0, 1.0, 0.1
+        ));
         panel.add(confidenceSpinner);
         panel.add(Box.createVerticalGlue());
 
         // Buttons
         JPanel buttonPanel = new JPanel();
-        JButton saveBtn = new JButton("Save Changes");
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 10, 5));
+
+        JButton saveBtn = new JButton("💾 Save Changes");
+        saveBtn.setFont(new Font("Arial", Font.BOLD, 11));
+        saveBtn.setBackground(new Color(40, 167, 69));
+        saveBtn.setForeground(Color.WHITE);
+        saveBtn.setOpaque(true);
         saveBtn.addActionListener(e -> {
             try {
-                String newContent = contentArea.getText();
+                String newContent = contentArea.getText().trim();
+                if (newContent.isEmpty()) {
+                    JOptionPane.showMessageDialog(dialog, "Comment content cannot be empty", "Validation Error", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
                 Sentiment.SentimentType newType = (Sentiment.SentimentType) sentimentCombo.getSelectedItem();
                 double newConfidence = ((Number) confidenceSpinner.getValue()).doubleValue();
                 
-                // Create new comment with updated sentiment
+                // Create updated comment
                 Sentiment newSentiment = new Sentiment(newType, newConfidence, newContent);
                 Comment updatedComment = new Comment(
                     comment.getCommentId(),
@@ -345,12 +407,9 @@ public class CommentManagementPanel extends JPanel {
                     updatedComment.setReliefItem(comment.getReliefItem());
                 }
                 
-                // Update in all posts
-                for (Post post : model.getPosts()) {
-                    if (post.getPostId().equals(updatedComment.getPostId())) {
-                        post.updateComment(updatedComment);
-                        break;
-                    }
+                // Update in model
+                if (parentPost != null) {
+                    parentPost.updateComment(updatedComment);
                 }
                 
                 // Update in database
@@ -358,16 +417,20 @@ public class CommentManagementPanel extends JPanel {
                     dbManager.updateComment(updatedComment);
                 }
                 
+                // Refresh UI
                 refreshTable();
                 dialog.dispose();
                 statusLabel.setText("✓ Comment updated and saved to database");
+                JOptionPane.showMessageDialog(CommentManagementPanel.this, "✓ Comment updated successfully", "Success", JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(dialog, "Error updating comment: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                statusLabel.setText("✗ Error updating comment: " + ex.getMessage());
             }
         });
         buttonPanel.add(saveBtn);
 
         JButton cancelBtn = new JButton("Cancel");
+        cancelBtn.setFont(new Font("Arial", Font.BOLD, 11));
         cancelBtn.addActionListener(e -> dialog.dispose());
         buttonPanel.add(cancelBtn);
 
@@ -375,6 +438,24 @@ public class CommentManagementPanel extends JPanel {
 
         dialog.add(panel);
         dialog.setVisible(true);
+    }
+
+    /**
+     * Clear and refresh the comment table after database reset
+     */
+    public void clearAndRefresh() {
+        tableModel.setRowCount(0);
+        detailsArea.setText("");
+        statusLabel.setText("Database reset - No comments available");
+        totalLabel.setText("Total: 0 comments");
+    }
+
+    /**
+     * Called when model changes (e.g., after database reset)
+     */
+    @Override
+    public void modelChanged() {
+        refreshTable();
     }
 
 }

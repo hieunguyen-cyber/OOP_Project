@@ -327,6 +327,9 @@ public class DisasterManagementPanel extends JPanel {
                 statusLabel.setText("✓ Reset to default disasters | Removed: " + removedCount + 
                                    " custom types, Deleted: " + deletedComments + " comments");
                 refreshDisasterList();
+                
+                // Save the reset state to persistence (only default disasters will be saved)
+                model.getPersistenceManager().saveDisasters(DisasterManager.getInstance());
 
                 JOptionPane.showMessageDialog(this,
                     "✓ Reset complete\n" +

@@ -5,6 +5,7 @@ import com.humanitarian.logistics.crawler.FacebookCrawler;
 import com.humanitarian.logistics.crawler.MockDataCrawler;
 import javax.swing.*;
 import java.awt.*;
+import java.io.File;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -140,6 +141,17 @@ public class CrawlControlPanel extends JPanel {
         mockButton.setMaximumSize(new Dimension(250, 40));
         mockButton.addActionListener(e -> loadSampleData());
         panel.add(mockButton);
+
+        panel.add(Box.createVerticalStrut(8));
+
+        // Reset Database button
+        JButton resetDbButton = new JButton("Reset Database");
+        resetDbButton.setMaximumSize(new Dimension(250, 40));
+        resetDbButton.setBackground(new Color(231, 76, 60));
+        resetDbButton.setForeground(Color.WHITE);
+        resetDbButton.setOpaque(true);
+        resetDbButton.addActionListener(e -> resetDatabase());
+        panel.add(resetDbButton);
 
         panel.add(Box.createVerticalGlue());
 
@@ -683,5 +695,93 @@ public class CrawlControlPanel extends JPanel {
         
         // Default to "yagi" if no match found
         return manager.getDisasterType("yagi");
+    }
+
+    /**
+     * Reset the database by deleting the old file and creating a new empty one
+     */
+    private void resetDatabase() {
+        int confirm = JOptionPane.showConfirmDialog(
+            this,
+            "This will delete the entire database file and create a new empty one.\nAll data will be lost. Continue?",
+            "Reset Database",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+        );
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                // Use relative path so it works on any machine
+                File dbFile = new File("humanitarian_logistics_user.db");
+                
+                // Delete the old database file
+                if (dbFile.exists()) {
+                    if (!dbFile.delete()) {
+                        throw new Exception("Failed to delete old database file");
+                    }
+                }
+
+                // Create new empty database with proper schema
+                try {
+                    Class.forName("org.sqlite.JDBC");
+                    java.sql.Connection conn = java.sql.DriverManager.getConnection(
+                        "jdbc:sqlite:" + dbFile.getAbsolutePath()
+                    );
+                    conn.setAutoCommit(false);
+                    try (java.sql.Statement stmt = conn.createStatement()) {
+                        
+                        // Create posts table
+                        stmt.execute("CREATE TABLE IF NOT EXISTS posts (" +
+                            "post_id INTEGER PRIMARY KEY, " +
+                            "title TEXT NOT NULL, " +
+                            "content TEXT NOT NULL, " +
+                            "author TEXT, " +
+                            "posted_at TEXT, " +
+                            "source TEXT" +
+                            ")");
+                        
+                        // Create comments table with foreign key
+                        stmt.execute("CREATE TABLE IF NOT EXISTS comments (" +
+                            "comment_id INTEGER PRIMARY KEY, " +
+                            "post_id INTEGER NOT NULL, " +
+                            "content TEXT NOT NULL, " +
+                            "author TEXT, " +
+                            "created_at TEXT, " +
+                            "sentiment_type TEXT, " +
+                            "sentiment_confidence REAL, " +
+                            "relief_category TEXT, " +
+                            "FOREIGN KEY(post_id) REFERENCES posts(post_id) ON DELETE CASCADE" +
+                            ")");
+                        
+                        conn.commit();
+                        
+                        statusLabel.setText("✓ Database reset successfully");
+                        crawlResultsArea.setText("Database has been reset.\n");
+                        crawlResultsArea.append("Old file deleted and new empty database created.\n");
+                        
+                        // Clear model data
+                        model.clearPosts();
+                        
+                        JOptionPane.showMessageDialog(
+                            this,
+                            "✓ Database reset successfully!\nOld file deleted and new empty database created.",
+                            "Reset Complete",
+                            JOptionPane.INFORMATION_MESSAGE
+                        );
+                    }
+                    conn.close();
+                } catch (Exception dbEx) {
+                    throw new Exception("Failed to create new database: " + dbEx.getMessage());
+                }
+            } catch (Exception ex) {
+                statusLabel.setText("❌ Error during reset: " + ex.getMessage());
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Error during database reset: " + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+                );
+            }
+        }
     }
 }

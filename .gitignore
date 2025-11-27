@@ -48,6 +48,11 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Documentation (exclude README files)
+*.md
+!README.md
+!README_*.md
 .tmp/
 
 # Node (if any)

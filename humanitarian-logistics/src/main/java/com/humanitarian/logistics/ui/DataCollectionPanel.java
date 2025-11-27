@@ -5,24 +5,23 @@ import com.humanitarian.logistics.database.DatabaseLoader;
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Panel for collecting new post data directly from the UI.
  * Allows users to manually input posts and comments without requiring web scraping.
+ * Also supports loading data from the dev-ui curated database.
  */
 public class DataCollectionPanel extends JPanel {
-    private Model model;
-    private JTextArea contentArea;
+    private final Model model;
+    private JTextArea postContentArea;
+    private JTextArea commentsArea;
     private JTextField authorField;
     private JComboBox<String> disasterTypeCombo;
     private JComboBox<ReliefItem.Category> categoryCombo;
     private JComboBox<Sentiment.SentimentType> sentimentCombo;
     private JSpinner confidenceSpinner;
-    private JCheckBox isCommentCheckBox;
-    private JTextField parentPostIdField;
-    private JSpinner dateSpinner;
     private JLabel statusLabel;
 
     public DataCollectionPanel(Model model) {
@@ -32,267 +31,281 @@ public class DataCollectionPanel extends JPanel {
 
     private void initializeUI() {
         setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createTitledBorder("Data Collection - Manual Entry"));
+        setBorder(BorderFactory.createTitledBorder("📝 Data Collection - Add Posts & Comments"));
 
-        // Left panel - Input fields
-        JPanel inputPanel = createInputPanel();
-        add(inputPanel, BorderLayout.WEST);
+        // Main content area - two panels side by side
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new GridLayout(1, 2, 10, 10));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Right panel - Preview and action buttons
-        JPanel actionPanel = createActionPanel();
-        add(actionPanel, BorderLayout.CENTER);
+        // Left side - Post input
+        mainPanel.add(createPostInputPanel());
 
-        // Bottom panel - Status
-        statusLabel = new JLabel("Ready to add new data");
-        add(statusLabel, BorderLayout.SOUTH);
+        // Right side - Comments input
+        mainPanel.add(createCommentsInputPanel());
+
+        add(mainPanel, BorderLayout.CENTER);
+
+        // Bottom panel - Control buttons and status
+        JPanel bottomPanel = createBottomPanel();
+        add(bottomPanel, BorderLayout.SOUTH);
     }
 
-    private JPanel createInputPanel() {
+    private JPanel createPostInputPanel() {
         JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        panel.setPreferredSize(new Dimension(350, 0));
+        panel.setLayout(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createTitledBorder("Post Information"));
 
-        // Content area
-        JLabel contentLabel = new JLabel("Post Content:");
-        panel.add(contentLabel);
-        contentArea = new JTextArea(5, 30);
-        contentArea.setLineWrap(true);
-        contentArea.setWrapStyleWord(true);
-        JScrollPane scrollPane = new JScrollPane(contentArea);
-        panel.add(scrollPane);
-        panel.add(Box.createVerticalStrut(10));
+        // Input fields panel
+        JPanel fieldsPanel = new JPanel();
+        fieldsPanel.setLayout(new BoxLayout(fieldsPanel, BoxLayout.Y_AXIS));
+        fieldsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Author field
-        panel.add(new JLabel("Author:"));
-        authorField = new JTextField(20);
-        panel.add(authorField);
-        panel.add(Box.createVerticalStrut(8));
+        // Author
+        fieldsPanel.add(new JLabel("Author:"));
+        authorField = new JTextField("Anonymous");
+        authorField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+        fieldsPanel.add(authorField);
+        fieldsPanel.add(Box.createVerticalStrut(8));
 
-        // Date field (yyyy-MM-dd format)
-        panel.add(new JLabel("Date (yyyy-MM-dd): *"));
-        dateSpinner = new JSpinner(new SpinnerDateModel());
-        JSpinner.DateEditor dateEditor = new JSpinner.DateEditor(dateSpinner, "yyyy-MM-dd");
-        dateSpinner.setEditor(dateEditor);
-        dateSpinner.setValue(new java.util.Date());
-        panel.add(dateSpinner);
-        panel.add(Box.createVerticalStrut(8));
-
-        // Disaster Type Dropdown
-        panel.add(new JLabel("Disaster Type: *"));
+        // Disaster Type
+        fieldsPanel.add(new JLabel("Disaster Type:"));
         disasterTypeCombo = new JComboBox<>();
         updateDisasterTypeCombo();
-        disasterTypeCombo.setMaximumSize(new Dimension(300, 25));
-        panel.add(disasterTypeCombo);
-        panel.add(Box.createVerticalStrut(8));
+        disasterTypeCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+        fieldsPanel.add(disasterTypeCombo);
+        fieldsPanel.add(Box.createVerticalStrut(8));
 
         // Relief Category
-        panel.add(new JLabel("Relief Category:"));
+        fieldsPanel.add(new JLabel("Relief Category:"));
         categoryCombo = new JComboBox<>(ReliefItem.Category.values());
-        panel.add(categoryCombo);
-        panel.add(Box.createVerticalStrut(8));
+        categoryCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+        fieldsPanel.add(categoryCombo);
+        fieldsPanel.add(Box.createVerticalStrut(8));
 
         // Sentiment
-        panel.add(new JLabel("Sentiment:"));
+        fieldsPanel.add(new JLabel("Sentiment:"));
         sentimentCombo = new JComboBox<>(Sentiment.SentimentType.values());
         sentimentCombo.setSelectedItem(Sentiment.SentimentType.NEUTRAL);
-        panel.add(sentimentCombo);
-        panel.add(Box.createVerticalStrut(8));
+        sentimentCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+        fieldsPanel.add(sentimentCombo);
+        fieldsPanel.add(Box.createVerticalStrut(8));
 
-        // Confidence score
-        panel.add(new JLabel("Confidence (0.0 - 1.0):"));
+        // Confidence
+        fieldsPanel.add(new JLabel("Confidence (0.0 - 1.0):"));
         confidenceSpinner = new JSpinner(new SpinnerNumberModel(0.8, 0.0, 1.0, 0.1));
-        panel.add(confidenceSpinner);
-        panel.add(Box.createVerticalStrut(8));
+        fieldsPanel.add(confidenceSpinner);
+        fieldsPanel.add(Box.createVerticalStrut(10));
 
-        // Is comment checkbox
-        isCommentCheckBox = new JCheckBox("This is a comment on a post");
-        isCommentCheckBox.addActionListener(e -> {
-            parentPostIdField.setEnabled(isCommentCheckBox.isSelected());
-        });
-        panel.add(isCommentCheckBox);
-        panel.add(Box.createVerticalStrut(8));
+        // Post content
+        fieldsPanel.add(new JLabel("Post Content:"));
+        postContentArea = new JTextArea(8, 35);
+        postContentArea.setLineWrap(true);
+        postContentArea.setWrapStyleWord(true);
+        JScrollPane postScroll = new JScrollPane(postContentArea);
+        fieldsPanel.add(postScroll);
+        fieldsPanel.add(Box.createVerticalStrut(5));
 
-        // Parent post ID field
-        panel.add(new JLabel("Parent Post ID (if comment):"));
-        parentPostIdField = new JTextField(20);
-        parentPostIdField.setEnabled(false);
-        panel.add(parentPostIdField);
+        // Info label
+        JLabel infoLabel = new JLabel("Post ID will be auto-generated");
+        infoLabel.setFont(new Font("Arial", Font.ITALIC, 10));
+        infoLabel.setForeground(new Color(100, 100, 100));
+        fieldsPanel.add(infoLabel);
 
-        panel.add(Box.createVerticalGlue());
-
+        panel.add(fieldsPanel, BorderLayout.CENTER);
         return panel;
     }
 
-    private JPanel createActionPanel() {
+    private JPanel createCommentsInputPanel() {
         JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setLayout(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createTitledBorder("Comments (one per line)"));
+
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BorderLayout(5, 5));
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        contentPanel.add(new JLabel("Enter each comment on a new line:"), BorderLayout.NORTH);
+
+        commentsArea = new JTextArea(16, 35);
+        commentsArea.setLineWrap(true);
+        commentsArea.setWrapStyleWord(true);
+        commentsArea.setFont(new Font("Arial", Font.PLAIN, 11));
+        JScrollPane scrollPane = new JScrollPane(commentsArea);
+        contentPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Example label
+        JLabel exampleLabel = new JLabel("Example: Line 1 = Comment 1, Line 2 = Comment 2, etc.");
+        exampleLabel.setFont(new Font("Arial", Font.ITALIC, 10));
+        exampleLabel.setForeground(new Color(100, 100, 100));
+        contentPanel.add(exampleLabel, BorderLayout.SOUTH);
+
+        panel.add(contentPanel, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel createBottomPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Preview text area
-        JLabel previewLabel = new JLabel("Preview & Statistics:");
-        panel.add(previewLabel);
+        // Status label
+        statusLabel = new JLabel("Ready to add new post with comments");
+        panel.add(statusLabel, BorderLayout.WEST);
 
-        JTextArea previewArea = new JTextArea(15, 40);
-        previewArea.setEditable(false);
-        previewArea.setFont(new Font("Monospaced", Font.PLAIN, 10));
-        JScrollPane scrollPane = new JScrollPane(previewArea);
-        panel.add(scrollPane);
-        panel.add(Box.createVerticalStrut(10));
+        // Button panel
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 5, 0));
 
-        // Add button
-        JButton addButton = new JButton("Add Post/Comment");
-        addButton.setFont(new Font("Arial", Font.BOLD, 12));
-        addButton.setMaximumSize(new Dimension(200, 40));
-        addButton.addActionListener(e -> addPostOrComment(previewArea));
-        panel.add(addButton);
-        panel.add(Box.createVerticalStrut(5));
+        // Clear button
+        JButton clearButton = new JButton("Clear");
+        clearButton.setPreferredSize(new Dimension(100, 35));
+        clearButton.addActionListener(e -> clearForm());
+        buttonPanel.add(clearButton);
 
-        // Batch import (future feature)
-        JButton statsButton = new JButton("Show Data Statistics");
-        statsButton.setMaximumSize(new Dimension(200, 40));
-        statsButton.addActionListener(e -> showDataStatistics(previewArea));
-        panel.add(statsButton);
-        panel.add(Box.createVerticalStrut(5));
+        // Save button
+        JButton saveButton = new JButton("💾 Save Post & Comments");
+        saveButton.setPreferredSize(new Dimension(200, 35));
+        saveButton.setFont(new Font("Arial", Font.BOLD, 12));
+        saveButton.setBackground(new Color(46, 204, 113));
+        saveButton.setForeground(Color.WHITE);
+        saveButton.setOpaque(true);
+        saveButton.addActionListener(e -> savePostWithComments());
+        buttonPanel.add(saveButton);
 
         // Use Our Database button
-        JButton useOurDatabaseButton = new JButton("Use Our Database");
+        JButton useOurDatabaseButton = new JButton("📚 Use Our Database");
+        useOurDatabaseButton.setPreferredSize(new Dimension(180, 35));
         useOurDatabaseButton.setFont(new Font("Arial", Font.BOLD, 12));
-        useOurDatabaseButton.setMaximumSize(new Dimension(200, 40));
         useOurDatabaseButton.setBackground(new Color(34, 139, 34)); // Forest Green
         useOurDatabaseButton.setForeground(Color.WHITE);
         useOurDatabaseButton.setOpaque(true);
         useOurDatabaseButton.setBorderPainted(false);
-        useOurDatabaseButton.setFocusPainted(false);
-        useOurDatabaseButton.addActionListener(e -> loadOurDatabase(previewArea));
-        panel.add(useOurDatabaseButton);
+        useOurDatabaseButton.addActionListener(e -> loadOurDatabase());
+        buttonPanel.add(useOurDatabaseButton);
 
-        panel.add(Box.createVerticalGlue());
-
+        panel.add(buttonPanel, BorderLayout.EAST);
         return panel;
     }
 
-    private void addPostOrComment(JTextArea previewArea) {
-        String content = contentArea.getText().trim();
+    private void savePostWithComments() {
+        String postContent = postContentArea.getText().trim();
+        String commentsText = commentsArea.getText().trim();
         String author = authorField.getText().trim();
-        String selectedDisaster = (String) disasterTypeCombo.getSelectedItem();
+        String disasterType = (String) disasterTypeCombo.getSelectedItem();
         ReliefItem.Category category = (ReliefItem.Category) categoryCombo.getSelectedItem();
-        Sentiment.SentimentType sentimentType = (Sentiment.SentimentType) sentimentCombo.getSelectedItem();
+        Sentiment.SentimentType sentiment = (Sentiment.SentimentType) sentimentCombo.getSelectedItem();
         double confidence = ((Number) confidenceSpinner.getValue()).doubleValue();
-        java.util.Date selectedDate = (java.util.Date) dateSpinner.getValue();
 
         // Validation
-        if (content.isEmpty()) {
+        if (postContent.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Please enter post content", "Validation Error", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        if (author.isEmpty()) {
-            author = "User " + System.currentTimeMillis() % 1000;
-        }
-
-        if (selectedDisaster == null || selectedDisaster.isEmpty()) {
+        if (disasterType == null || disasterType.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Please select a Disaster Type", "Validation Error", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // Convert java.util.Date to LocalDateTime
-        LocalDateTime postDateTime = selectedDate.toInstant()
-            .atZone(java.time.ZoneId.systemDefault())
-            .toLocalDateTime();
-
         try {
-            if (isCommentCheckBox.isSelected()) {
-                // Add as comment
-                String parentPostId = parentPostIdField.getText().trim();
-                if (parentPostId.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, "Please enter parent post ID for comment", "Validation Error", JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
+            // Generate unique post ID
+            String postId = UUID.randomUUID().toString().substring(0, 13);
+            LocalDateTime now = LocalDateTime.now();
 
-                Sentiment sentiment = new Sentiment(sentimentType, confidence, content);
-                ReliefItem reliefItem = new ReliefItem(category, "Relief item", 3);
+            // Create and save post
+            FacebookPost post = new FacebookPost(
+                postId,
+                postContent,
+                now,
+                author.isEmpty() ? "Anonymous" : author,
+                "manual_entry"
+            );
 
-                Comment comment = new Comment(
-                    "COMMENT_" + System.currentTimeMillis(),
-                    parentPostId,
-                    content,
-                    postDateTime,
-                    author
-                );
-                comment.setSentiment(sentiment);
-                comment.setReliefItem(reliefItem);
-
-                FacebookPost post = new FacebookPost(
-                    parentPostId,
-                    content,
-                    postDateTime,
-                    author,
-                    "PAGE_" + selectedDisaster
-                );
-                post.setSentiment(sentiment);
-                post.setReliefItem(reliefItem);
-                post.addComment(comment);
-
-                model.addPost(post);
-                statusLabel.setText("✓ Comment added successfully");
-            } else {
-                // Add as post
-                Sentiment sentiment = new Sentiment(sentimentType, confidence, content);
-                ReliefItem reliefItem = new ReliefItem(category, "Relief item", 3);
-
-                FacebookPost post = new FacebookPost(
-                    "POST_" + System.currentTimeMillis(),
-                    content,
-                    postDateTime,
-                    author,
-                    "PAGE_" + selectedDisaster
-                );
-                post.setSentiment(sentiment);
-                post.setReliefItem(reliefItem);
-
-                model.addPost(post);
-                statusLabel.setText("✓ Post added: " + post.getPostId());
+            // Set post metadata
+            post.setDisasterKeyword(disasterType);
+            post.setSentiment(new Sentiment(sentiment, confidence, postContent));
+            if (category != null) {
+                post.setReliefItem(new ReliefItem(category, category.name(), 1));
             }
 
+            // Set disaster type
+            DisasterType disaster = DisasterManager.getInstance().findDisasterType(disasterType);
+            if (disaster != null) {
+                post.setDisasterType(disaster);
+            }
+
+            // Add post to model (auto-saves to database)
+            model.addPost(post);
+
+            int commentCount = 0;
+
+            // Parse and save comments
+            if (!commentsText.isEmpty()) {
+                String[] commentLines = commentsText.split("\n");
+                for (String line : commentLines) {
+                    line = line.trim();
+                    if (!line.isEmpty()) {
+                        commentCount++;
+                        
+                        // Generate comment ID
+                        String commentId = "COMMENT_" + System.currentTimeMillis() + "_" + commentCount;
+
+                        // Create comment
+                        Comment comment = new Comment(
+                            commentId,
+                            postId,
+                            line,
+                            now,
+                            author.isEmpty() ? "Anonymous" : author
+                        );
+
+                        // Set comment metadata
+                        comment.setSentiment(new Sentiment(sentiment, confidence, line));
+                        if (category != null) {
+                            comment.setReliefItem(new ReliefItem(category, category.name(), 1));
+                        }
+
+                        // Add comment to post
+                        post.addComment(comment);
+                    }
+                }
+            }
+
+            // Show success message
+            String message = String.format(
+                "✓ Post saved successfully!\n\n" +
+                "Post ID: %s\n" +
+                "Comments: %d\n" +
+                "Author: %s\n" +
+                "Disaster: %s",
+                postId, commentCount, author.isEmpty() ? "Anonymous" : author, disasterType
+            );
+
+            statusLabel.setText("✓ Post saved with " + commentCount + " comments");
+            JOptionPane.showMessageDialog(this, message, "Success", JOptionPane.INFORMATION_MESSAGE);
+
+            // Clear form
             clearForm();
-            previewArea.append("[" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "] Data added successfully\n");
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error adding data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            statusLabel.setText("✗ Error: " + e.getMessage());
+
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error saving post: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            statusLabel.setText("✗ Error: " + ex.getMessage());
         }
     }
 
     private void clearForm() {
-        contentArea.setText("");
-        authorField.setText("");
-        dateSpinner.setValue(new java.util.Date());
+        postContentArea.setText("");
+        commentsArea.setText("");
+        authorField.setText("Anonymous");
+        disasterTypeCombo.setSelectedIndex(0);
         categoryCombo.setSelectedIndex(0);
         sentimentCombo.setSelectedItem(Sentiment.SentimentType.NEUTRAL);
         confidenceSpinner.setValue(0.8);
-        isCommentCheckBox.setSelected(false);
-        parentPostIdField.setText("");
-        parentPostIdField.setEnabled(false);
+        statusLabel.setText("Form cleared");
     }
 
-    private void showDataStatistics(JTextArea previewArea) {
-        java.util.List<Post> posts = model.getPosts();
-        int totalPosts = posts.size();
-        int totalComments = posts.stream().mapToInt(p -> p.getComments().size()).sum();
-
-        int positive = (int) posts.stream().filter(p -> p.getSentiment().getType() == Sentiment.SentimentType.POSITIVE).count();
-        int negative = (int) posts.stream().filter(p -> p.getSentiment().getType() == Sentiment.SentimentType.NEGATIVE).count();
-        int neutral = (int) posts.stream().filter(p -> p.getSentiment().getType() == Sentiment.SentimentType.NEUTRAL).count();
-
-        previewArea.setText("=== DATA STATISTICS ===\n");
-        previewArea.append("Total Posts: " + totalPosts + "\n");
-        previewArea.append("Total Comments: " + totalComments + "\n");
-        previewArea.append("Positive: " + positive + "\n");
-        previewArea.append("Negative: " + negative + "\n");
-        previewArea.append("Neutral: " + neutral + "\n");
-    }
-
-    private void loadOurDatabase(JTextArea previewArea) {
+    private void loadOurDatabase() {
         int confirmResult = JOptionPane.showConfirmDialog(this, 
             "This will replace all your current data with our curated database.\n" +
             "Your current data will be lost. Continue?",
@@ -339,15 +352,30 @@ public class DataCollectionPanel extends JPanel {
             }
             
             // Show statistics
-            showDataStatistics(previewArea);
+            List<Post> posts = model.getPosts();
+            int totalPosts = posts.size();
+            int totalComments = posts.stream().mapToInt(p -> p.getComments().size()).sum();
             
             String loadMsg = "✓ Our database loaded successfully\n" +
-                            "Posts imported: " + model.getPosts().size() + "\n" +
+                            "Posts imported: " + totalPosts + "\n" +
+                            "Comments: " + totalComments + "\n" +
                             "New disaster types added: " + addedCount;
             
             statusLabel.setText(loadMsg);
-            previewArea.insert("[" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + 
-                "] " + loadMsg + "\n", 0);
+            
+            // Save all data to database to persist it
+            try {
+                com.humanitarian.logistics.database.DatabaseManager dbMgr = new com.humanitarian.logistics.database.DatabaseManager();
+                for (Post post : model.getPosts()) {
+                    dbMgr.savePost(post);
+                    for (Comment comment : post.getComments()) {
+                        dbMgr.saveComment(comment);
+                    }
+                }
+                loadMsg += "\n✓ Data saved to database";
+            } catch (Exception dbEx) {
+                System.err.println("Warning: Data not saved to database: " + dbEx.getMessage());
+            }
             
             JOptionPane.showMessageDialog(this, loadMsg, "Database Loaded", JOptionPane.INFORMATION_MESSAGE);
             
@@ -357,20 +385,16 @@ public class DataCollectionPanel extends JPanel {
         }
     }
 
-    /**
-     * Update the disaster type combo box with available disaster types
-     */
     private void updateDisasterTypeCombo() {
         disasterTypeCombo.removeAllItems();
-        
         List<String> disasterNames = DisasterManager.getInstance().getAllDisasterNames();
         for (String name : disasterNames) {
             disasterTypeCombo.addItem(name);
         }
-        
-        // Set default to "yagi"
-        if (disasterNames.contains("yagi")) {
-            disasterTypeCombo.setSelectedItem("yagi");
+        if (disasterTypeCombo.getItemCount() == 0) {
+            disasterTypeCombo.addItem("yagi");
+            disasterTypeCombo.addItem("flood");
+            disasterTypeCombo.addItem("matmo");
         }
     }
 }

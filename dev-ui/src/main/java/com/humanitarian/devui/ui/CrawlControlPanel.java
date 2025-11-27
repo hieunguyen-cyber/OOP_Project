@@ -6,6 +6,7 @@ import com.humanitarian.devui.crawler.MockDataCrawler;
 import com.humanitarian.devui.database.DatabaseManager;
 import javax.swing.*;
 import java.awt.*;
+import java.io.File;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -136,6 +137,25 @@ public class CrawlControlPanel extends JPanel {
         JLabel section3Label = new JLabel("UTILITIES");
         section3Label.setFont(new Font("Arial", Font.BOLD, 11));
         panel.add(section3Label);
+        panel.add(Box.createVerticalStrut(8));
+
+        // Use Sample Data button
+        JButton sampleDataButton = new JButton("Use Sample Data");
+        sampleDataButton.setMaximumSize(new Dimension(250, 40));
+        sampleDataButton.addActionListener(e -> loadSampleData());
+        panel.add(sampleDataButton);
+
+        panel.add(Box.createVerticalStrut(8));
+
+        // Reset Database button
+        JButton resetDbButton = new JButton("Reset Database");
+        resetDbButton.setMaximumSize(new Dimension(250, 40));
+        resetDbButton.setBackground(new Color(231, 76, 60));
+        resetDbButton.setForeground(Color.WHITE);
+        resetDbButton.setOpaque(true);
+        resetDbButton.addActionListener(e -> resetDatabase());
+        panel.add(resetDbButton);
+
         panel.add(Box.createVerticalGlue());
 
         return panel;
@@ -660,5 +680,178 @@ public class CrawlControlPanel extends JPanel {
         
         // Default to "yagi" if no match found
         return manager.getDisasterType("yagi");
+    }
+
+    /**
+     * Load sample data into the buffer
+     */
+    private void loadSampleData() {
+        try {
+            statusLabel.setText("Loading sample data...");
+            
+            List<Post> samplePosts = new ArrayList<>();
+            String[] sampleTopics = {"#yagi", "#bualoi", "#matmo"};
+            ReliefItem.Category[] categories = ReliefItem.Category.values();
+
+            for (int p = 0; p < 3; p++) {
+                String topic = sampleTopics[p % sampleTopics.length];
+                ReliefItem.Category category = categories[p % categories.length];
+                ReliefItem reliefItem = new ReliefItem(category, "Relief for " + category.getDisplayName(), 3);
+
+                FacebookPost post = new FacebookPost(
+                    "POST_SAMPLE_" + p,
+                    "Post about " + topic + " - " + category.getDisplayName() + " assistance needed",
+                    java.time.LocalDateTime.now().minusHours(p),
+                    "Author_" + p,
+                    "PAGE_" + topic
+                );
+
+                Sentiment.SentimentType sentiment = Sentiment.SentimentType.values()[p % 3];
+                post.setSentiment(new Sentiment(sentiment, 0.8 + Math.random() * 0.2, post.getContent()));
+                post.setReliefItem(reliefItem);
+
+                samplePosts.add(post);
+            }
+
+            for (Post post : samplePosts) {
+                buffer.addPost(post);
+            }
+            
+            statusLabel.setText("✓ Sample data loaded: " + samplePosts.size() + " posts");
+            crawlResultsArea.setText("Sample data loaded successfully!\n");
+            crawlResultsArea.append("Posts: " + samplePosts.size() + "\n");
+            
+            JOptionPane.showMessageDialog(
+                this,
+                "Sample data loaded successfully!\nPosts: " + samplePosts.size(),
+                "Sample Data Loaded",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+        } catch (Exception ex) {
+            statusLabel.setText("❌ Error loading sample data: " + ex.getMessage());
+            JOptionPane.showMessageDialog(
+                this,
+                "Error loading sample data: " + ex.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    /**
+     * Reset the database by deleting the old file and creating a new empty one
+     */
+    private void resetDatabase() {
+        int confirm = JOptionPane.showConfirmDialog(
+            this,
+            "This will delete the entire database file and create a new empty one.\nAll posts and comments will be lost. Continue?",
+            "Reset Database",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+        );
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                // Clear model data first using proper method that notifies listeners
+                model.clearPosts();
+                buffer.clear();
+                
+                // Get the dev-ui database path
+                File dbFile = new File("humanitarian_logistics_curated.db");
+                String dbPath = dbFile.getAbsolutePath();
+                
+                System.out.println("Resetting database at: " + dbPath);
+                
+                // Delete the old database file and its associated journal files
+                if (dbFile.exists()) {
+                    boolean deleted = dbFile.delete();
+                    System.out.println("Delete old DB file: " + deleted);
+                    if (!deleted) {
+                        throw new Exception("Failed to delete old database file at " + dbPath);
+                    }
+                    
+                    // Also try to delete journal files if they exist
+                    File journalFile = new File(dbPath + "-journal");
+                    if (journalFile.exists()) {
+                        journalFile.delete();
+                    }
+                    
+                    statusLabel.setText("✓ Old database file deleted");
+                }
+                
+                // Give the filesystem a moment to fully release the file
+                Thread.sleep(100);
+                
+                // Create new empty database by initializing schema
+                try {
+                    Class.forName("org.sqlite.JDBC");
+                    java.sql.Connection conn = java.sql.DriverManager.getConnection(
+                        "jdbc:sqlite:" + dbPath
+                    );
+                    conn.setAutoCommit(false);
+                    try (java.sql.Statement stmt = conn.createStatement()) {
+                        
+                        System.out.println("Creating new database schema...");
+                        
+                        // Create posts table
+                        stmt.execute("CREATE TABLE IF NOT EXISTS posts (" +
+                            "post_id INTEGER PRIMARY KEY, " +
+                            "title TEXT NOT NULL, " +
+                            "content TEXT NOT NULL, " +
+                            "author TEXT, " +
+                            "posted_at TEXT, " +
+                            "source TEXT" +
+                            ")");
+                        
+                        // Create comments table with foreign key
+                        stmt.execute("CREATE TABLE IF NOT EXISTS comments (" +
+                            "comment_id INTEGER PRIMARY KEY, " +
+                            "post_id INTEGER NOT NULL, " +
+                            "content TEXT NOT NULL, " +
+                            "author TEXT, " +
+                            "created_at TEXT, " +
+                            "sentiment_type TEXT, " +
+                            "sentiment_confidence REAL, " +
+                            "relief_category TEXT, " +
+                            "FOREIGN KEY(post_id) REFERENCES posts(post_id) ON DELETE CASCADE" +
+                            ")");
+                        
+                        conn.commit();
+                        
+                        System.out.println("Database schema created successfully");
+                        
+                        statusLabel.setText("✓ Database reset successfully");
+                        crawlResultsArea.setText("Database has been reset.\n");
+                        crawlResultsArea.append("✓ Old database file deleted: " + dbPath + "\n");
+                        crawlResultsArea.append("✓ New empty database created with fresh schema\n");
+                        crawlResultsArea.append("Ready for new data crawl\n");
+                        
+                        JOptionPane.showMessageDialog(
+                            this,
+                            "✓ Database reset successfully!\n\n" +
+                            "Old file: " + dbPath + "\n" +
+                            "Status: Deleted and replaced with new empty database",
+                            "Reset Complete",
+                            JOptionPane.INFORMATION_MESSAGE
+                        );
+                    }
+                    conn.close();
+                } catch (Exception dbEx) {
+                    System.err.println("Database creation error: " + dbEx.getMessage());
+                    dbEx.printStackTrace();
+                    throw new Exception("Failed to create new database: " + dbEx.getMessage());
+                }
+            } catch (Exception ex) {
+                System.err.println("Reset database error: " + ex.getMessage());
+                ex.printStackTrace();
+                statusLabel.setText("❌ Error during reset: " + ex.getMessage());
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Error during database reset:\n" + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+                );
+            }
+        }
     }
 }

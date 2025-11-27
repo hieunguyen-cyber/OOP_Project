@@ -1,6 +1,8 @@
 package com.humanitarian.devui.crawler;
 
 import com.humanitarian.devui.model.*;
+import com.humanitarian.devui.sentiment.EnhancedSentimentAnalyzer;
+import com.humanitarian.devui.sentiment.SentimentAnalyzer;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -20,6 +22,7 @@ public class FacebookCrawler implements DataCrawler {
     private WebDriver driver;
     private WebDriverWait wait;
     private boolean initialized;
+    private SentimentAnalyzer sentimentAnalyzer;
     private static final int SCROLL_PAUSE = 2000;
     private String cookieString = "";
     private String email = "bedepzaibodoi@icloud.com";
@@ -27,11 +30,13 @@ public class FacebookCrawler implements DataCrawler {
 
     public FacebookCrawler() {
         this.initialized = false;
+        this.sentimentAnalyzer = new EnhancedSentimentAnalyzer();
     }
 
     public FacebookCrawler(String cookieString) {
         this.initialized = false;
         this.cookieString = cookieString;
+        this.sentimentAnalyzer = new EnhancedSentimentAnalyzer();
     }
 
     @Override
@@ -42,6 +47,9 @@ public class FacebookCrawler implements DataCrawler {
     public void initialize() {
         try {
             System.out.println("🚀 Initializing Facebook Crawler with Direct Login...");
+
+            // Initialize sentiment analyzer
+            sentimentAnalyzer.initialize();
 
             ChromeOptions options = new ChromeOptions();
             options.addArguments(
@@ -280,8 +288,9 @@ public class FacebookCrawler implements DataCrawler {
                 "FACEBOOK"
             );
 
-            // Set default sentiment and relief item
-            post.setSentiment(new Sentiment(Sentiment.SentimentType.NEUTRAL, 0.5, postContent));
+            // Analyze sentiment instead of using default
+            Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(postContent);
+            post.setSentiment(sentiment);
             ReliefItem reliefItem = tempCrawler.classifyReliefItemFromText(postContent);
             post.setReliefItem(reliefItem);
             
@@ -853,8 +862,9 @@ public class FacebookCrawler implements DataCrawler {
                 "FACEBOOK"
             );
             
-            // Set default sentiment and relief item
-            post.setSentiment(new Sentiment(Sentiment.SentimentType.NEUTRAL, 0.5, postContent));
+            // Analyze sentiment instead of using default
+            Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(postContent);
+            post.setSentiment(sentiment);
             
             // Try to classify relief item from content
             ReliefItem reliefItem = classifyReliefItemFromText(postContent);
@@ -1242,27 +1252,6 @@ public class FacebookCrawler implements DataCrawler {
                 int contentIndex = Math.min((int) (dayProgress * contents.length), contents.length - 1);
                 
                 String content = contents[contentIndex];
-                Sentiment.SentimentType sentiment;
-                double confidence;
-
-                // Gradual progression: early=negative, middle=mixed, late=positive
-                if (dayProgress < 0.33) {
-                    // First 30 days: crisis period - mostly negative
-                    sentiment = rand.nextDouble() > 0.35 ? 
-                               Sentiment.SentimentType.NEGATIVE : Sentiment.SentimentType.NEUTRAL;
-                    confidence = 0.75 + rand.nextDouble() * 0.20;
-                } else if (dayProgress < 0.66) {
-                    // Middle 30 days: response period - mixed
-                    double r = rand.nextDouble();
-                    sentiment = r > 0.5 ? Sentiment.SentimentType.POSITIVE :
-                               (r > 0.25 ? Sentiment.SentimentType.NEUTRAL : Sentiment.SentimentType.NEGATIVE);
-                    confidence = 0.65 + rand.nextDouble() * 0.25;
-                } else {
-                    // Last 30 days: recovery period - mostly positive
-                    sentiment = rand.nextDouble() > 0.3 ? 
-                               Sentiment.SentimentType.POSITIVE : Sentiment.SentimentType.NEUTRAL;
-                    confidence = 0.80 + rand.nextDouble() * 0.15;
-                }
 
                 ReliefItem reliefItem = new ReliefItem(
                     category,
@@ -1278,7 +1267,9 @@ public class FacebookCrawler implements DataCrawler {
                     "FACEBOOK"
                 );
 
-                post.setSentiment(new Sentiment(sentiment, confidence, content));
+                // Analyze sentiment instead of using default
+                Sentiment analyzedSentiment = sentimentAnalyzer.analyzeSentiment(content);
+                post.setSentiment(analyzedSentiment);
                 post.setReliefItem(reliefItem);
                 post.setLikes(rand.nextInt(1500) + 30);
                 post.setShares(rand.nextInt(400) + 5);

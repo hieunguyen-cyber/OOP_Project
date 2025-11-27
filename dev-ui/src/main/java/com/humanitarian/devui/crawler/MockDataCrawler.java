@@ -1,6 +1,9 @@
 package com.humanitarian.devui.crawler;
 
 import com.humanitarian.devui.model.*;
+import com.humanitarian.devui.sentiment.EnhancedSentimentAnalyzer;
+import com.humanitarian.devui.sentiment.SentimentAnalyzer;
+import com.humanitarian.devui.preprocessor.ReliefItemClassifier;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -12,15 +15,20 @@ import java.util.*;
  * - Category-specific content for each relief type
  * - Temporal distribution with time-based sentiment evolution
  * - Realistic sentiment patterns per category
- * - Comments with varied sentiments for temporal analysis
+ * - Comments with ACTUAL sentiment analysis and category classification
  */
 public class MockDataCrawler implements DataCrawler {
     private final boolean initialized;
     private final Random random;
+    private final SentimentAnalyzer sentimentAnalyzer;
+    private final ReliefItemClassifier reliefClassifier;
 
     public MockDataCrawler() {
         this.initialized = true;
         this.random = new Random();
+        this.sentimentAnalyzer = new EnhancedSentimentAnalyzer();
+        this.sentimentAnalyzer.initialize();
+        this.reliefClassifier = new ReliefItemClassifier();
     }
 
     @Override
@@ -234,43 +242,6 @@ public class MockDataCrawler implements DataCrawler {
                 
                 String content = contents[contentIndex];
 
-                // Sentiment mapping: gradual progression from negative to positive
-                Sentiment.SentimentType sentiment;
-                double confidence;
-
-                if (dayProgress < 0.33) {
-                    // Early 30 days: mostly negative/neutral
-                    double r = random.nextDouble();
-                    if (r < 0.6) {
-                        sentiment = Sentiment.SentimentType.NEGATIVE;
-                        confidence = 0.75 + random.nextDouble() * 0.20;
-                    } else {
-                        sentiment = Sentiment.SentimentType.NEUTRAL;
-                        confidence = 0.65 + random.nextDouble() * 0.20;
-                    }
-                } else if (dayProgress < 0.66) {
-                    // Middle 30 days: mixed
-                    double r = random.nextDouble();
-                    if (r < 0.3) {
-                        sentiment = Sentiment.SentimentType.NEGATIVE;
-                    } else if (r < 0.6) {
-                        sentiment = Sentiment.SentimentType.NEUTRAL;
-                    } else {
-                        sentiment = Sentiment.SentimentType.POSITIVE;
-                    }
-                    confidence = 0.65 + random.nextDouble() * 0.25;
-                } else {
-                    // Last 30 days: mostly positive/neutral
-                    double r = random.nextDouble();
-                    if (r < 0.7) {
-                        sentiment = Sentiment.SentimentType.POSITIVE;
-                        confidence = 0.80 + random.nextDouble() * 0.15;
-                    } else {
-                        sentiment = Sentiment.SentimentType.NEUTRAL;
-                        confidence = 0.70 + random.nextDouble() * 0.20;
-                    }
-                }
-
                 ReliefItem reliefItem = new ReliefItem(
                     category,
                     "Relief: " + category.getDisplayName(),
@@ -285,7 +256,9 @@ public class MockDataCrawler implements DataCrawler {
                     "PAGE_" + (postIndex % 3 == 0 ? "OFFICIAL" : "COMMUNITY")
                 );
 
-                post.setSentiment(new Sentiment(sentiment, confidence, content));
+                // Analyze sentiment instead of using default
+                Sentiment analyzedSentiment = sentimentAnalyzer.analyzeSentiment(content);
+                post.setSentiment(analyzedSentiment);
                 post.setReliefItem(reliefItem);
                 post.setLikes(random.nextInt(800) + 30);
                 post.setShares(random.nextInt(200) + 5);
@@ -312,7 +285,7 @@ public class MockDataCrawler implements DataCrawler {
     }
 
     /**
-     * Add realistic comments with category-specific and sentiment-appropriate content
+     * Add realistic comments with actual sentiment analysis and category classification
      */
     private void addMockComments(FacebookPost post, ReliefItem.Category category, int contentIndex) {
         Map<ReliefItem.Category, String[]> commentsByCategory = new HashMap<>();
@@ -363,29 +336,7 @@ public class MockDataCrawler implements DataCrawler {
         String[] categoryComments = commentsByCategory.get(category);
 
         for (int i = 0; i < commentCount; i++) {
-            String commentText;
-            Sentiment.SentimentType sentiment;
-            double confidence;
-
-            // Match sentiment progression: early = negative, late = positive
-            if (contentIndex < 3) {
-                // Mostly negative comments
-                commentText = categoryComments[random.nextInt(Math.min(3, categoryComments.length))];
-                sentiment = random.nextDouble() > 0.4 ? Sentiment.SentimentType.NEGATIVE : Sentiment.SentimentType.NEUTRAL;
-                confidence = 0.70 + random.nextDouble() * 0.25;
-            } else if (contentIndex < 6) {
-                // Mixed comments
-                commentText = categoryComments[random.nextInt(categoryComments.length)];
-                double rand = random.nextDouble();
-                sentiment = rand > 0.5 ? Sentiment.SentimentType.POSITIVE :
-                           (rand > 0.25 ? Sentiment.SentimentType.NEUTRAL : Sentiment.SentimentType.NEGATIVE);
-                confidence = 0.65 + random.nextDouble() * 0.30;
-            } else {
-                // Mostly positive comments
-                commentText = categoryComments[random.nextInt(Math.min(2, categoryComments.length))];
-                sentiment = random.nextDouble() > 0.3 ? Sentiment.SentimentType.POSITIVE : Sentiment.SentimentType.NEUTRAL;
-                confidence = 0.75 + random.nextDouble() * 0.20;
-            }
+            String commentText = categoryComments[random.nextInt(categoryComments.length)];
 
             Comment comment = new Comment(
                 "CMT_MOCK_" + System.currentTimeMillis() + "_" + i,
@@ -395,7 +346,19 @@ public class MockDataCrawler implements DataCrawler {
                 commentAuthors[i % commentAuthors.length]
             );
 
-            comment.setSentiment(new Sentiment(sentiment, confidence, commentText));
+            // ✅ ANALYZE SENTIMENT using EnhancedSentimentAnalyzer
+            Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(commentText);
+            comment.setSentiment(sentiment);
+            
+            // ✅ CLASSIFY CATEGORY using ReliefItemClassifier
+            ReliefItem.Category classifiedCategory = reliefClassifier.classifyText(commentText);
+            if (classifiedCategory != null) {
+                comment.setReliefItem(new ReliefItem(classifiedCategory, "Auto-classified from comment", 3));
+            } else {
+                // Fallback to parent post's category if no match found
+                comment.setReliefItem(new ReliefItem(category, "From parent post category", 2));
+            }
+            
             post.addComment(comment);
         }
     }

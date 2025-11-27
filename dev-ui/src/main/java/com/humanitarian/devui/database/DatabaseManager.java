@@ -70,6 +70,11 @@ public class DatabaseManager {
             pstmt.setString(9, post.getDisasterKeyword());
             pstmt.executeUpdate();
         }
+        
+        // Save all comments associated with this post
+        for (Comment comment : post.getComments()) {
+            saveComment(comment);
+        }
     }
 
     public boolean isDuplicateLink(String postId) throws SQLException {
