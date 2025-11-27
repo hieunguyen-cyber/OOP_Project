@@ -9,16 +9,31 @@ import java.util.*;
  * Saves/loads data to/from local cache files.
  */
 public class DataPersistenceManager {
-    private static final String DATA_DIR = "data";
+    private static final String DATA_DIR = getDataDir();
     private static final String POSTS_FILE = DATA_DIR + "/posts.dat";
     private static final String DISASTERS_FILE = DATA_DIR + "/disasters.dat";
+    
+    private static String getDataDir() {
+        // Get current working directory and find the data folder
+        String currentDir = new File(".").getAbsolutePath();
+        File dataDir;
+        
+        // If running from dev-ui directory, use dev-ui/data
+        if (currentDir.endsWith("dev-ui")) {
+            dataDir = new File("data");
+        } else {
+            // If running from project root, use dev-ui/data
+            dataDir = new File("dev-ui/data");
+        }
+        
+        if (!dataDir.exists()) {
+            dataDir.mkdirs();
+        }
+        return dataDir.getAbsolutePath();
+    }
 
     public DataPersistenceManager() {
-        // Create data directory if it doesn't exist
-        File dir = new File(DATA_DIR);
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
+        // Data directory is already created in getDataDir() static method
     }
 
     /**
