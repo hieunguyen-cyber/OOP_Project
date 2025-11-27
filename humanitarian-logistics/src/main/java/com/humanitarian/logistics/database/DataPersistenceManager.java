@@ -9,7 +9,7 @@ import java.util.*;
  * Saves/loads data to/from local cache files.
  */
 public class DataPersistenceManager {
-    private static final String DATA_DIR = System.getProperty("user.home") + "/.humanitarian_logistics";
+    private static final String DATA_DIR = "data";
     private static final String POSTS_FILE = DATA_DIR + "/posts.dat";
     private static final String DISASTERS_FILE = DATA_DIR + "/disasters.dat";
 
@@ -60,7 +60,7 @@ public class DataPersistenceManager {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(DISASTERS_FILE))) {
             // Save all non-default disaster types
             Set<String> defaultDisasters = new HashSet<>(Arrays.asList(
-                "yagi", "matmo", "flood", "disaster", "aid"
+                "yagi", "matmo", "bualo", "koto", "fung-wong"
             ));
             
             Map<String, DisasterType> customDisasters = new HashMap<>();

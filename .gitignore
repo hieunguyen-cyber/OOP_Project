@@ -22,6 +22,10 @@ build/
 *.sqlite
 *.sqlite3
 
+# Data directories (persistence files)
+dev-ui/data/
+humanitarian-logistics/data/
+
 # Log files
 *.log
 logs/

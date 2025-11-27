@@ -29,9 +29,9 @@ public class VerifyDataGeneration {
     public static void main(String[] args) throws Exception {
         System.out.println("=== Verifying Generated Sample Data ===\n");
         
-        verifyProject("dev-ui", System.getProperty("user.home") + "/.humanitarian_devui/posts.dat");
+        verifyProject("dev-ui", "dev-ui/data/posts.dat");
         System.out.println("\n" + "=".repeat(50) + "\n");
-        verifyProject("humanitarian-logistics", System.getProperty("user.home") + "/.humanitarian_logistics/posts.dat");
+        verifyProject("humanitarian-logistics", "humanitarian-logistics/data/posts.dat");
     }
     
     static void verifyProject(String projectName, String filePath) throws Exception {
