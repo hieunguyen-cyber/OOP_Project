@@ -205,7 +205,7 @@ public class DataCollectionPanel extends JPanel {
             LocalDateTime now = LocalDateTime.now();
 
             // Create and save post
-            FacebookPost post = new FacebookPost(
+            YouTubePost post = new YouTubePost(
                 postId,
                 postContent,
                 now,

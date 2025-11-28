@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 /**
  * Concrete implementation of Post for YouTube.
  * Demonstrates inheritance and polymorphism.
- * Structure identical to FacebookPost for consistency.
+ * Structure identical to YouTubePost for consistency.
  */
 public class YouTubePost extends Post {
     private static final long serialVersionUID = 1L;
@@ -22,6 +22,8 @@ public class YouTubePost extends Post {
         this.likes = 0;
         this.views = 0;
         this.disasterType = null;
+        // Initialize with default ReliefItem
+        this.setReliefItem(new ReliefItem(ReliefItem.Category.FOOD, "General Relief", 3));
     }
 
     public String getChannelId() {

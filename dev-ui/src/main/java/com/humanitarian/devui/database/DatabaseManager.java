@@ -282,7 +282,7 @@ public class DatabaseManager {
 
         java.time.LocalDateTime createdAt = java.time.LocalDateTime.parse(rs.getString("created_at"));
 
-        FacebookPost post = new FacebookPost(postId, content, createdAt, author, "");
+        YouTubePost post = new YouTubePost(postId, content, createdAt, author, "");
 
         String sentimentStr = rs.getString("sentiment");
         if (sentimentStr != null) {

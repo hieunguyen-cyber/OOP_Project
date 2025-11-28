@@ -476,9 +476,9 @@ public class AnalysisPanel extends JPanel {
         // Filter posts by disaster type
         return allPosts.stream()
             .filter(p -> {
-                if (p instanceof FacebookPost) {
-                    FacebookPost fbPost = (FacebookPost) p;
-                    DisasterType type = fbPost.getDisasterType();
+                if (p instanceof YouTubePost) {
+                    YouTubePost ytPost = (YouTubePost) p;
+                    DisasterType type = ytPost.getDisasterType();
                     return type != null && type.getName().equals(disasterName);
                 }
                 return false;

@@ -1,7 +1,6 @@
 package com.humanitarian.logistics.ui;
 
 import com.humanitarian.logistics.model.*;
-import com.humanitarian.logistics.crawler.FacebookCrawler;
 import com.humanitarian.logistics.crawler.YouTubeCrawler;
 import com.humanitarian.logistics.crawler.MockDataCrawler;
 import com.humanitarian.logistics.database.DatabaseManager;
@@ -13,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Panel for controlling data crawling from Facebook.
+ * Panel for controlling data crawling from YouTube.
  * Allows users to configure crawler settings and fetch data.
  */
 public class CrawlControlPanel extends JPanel {
@@ -29,8 +28,7 @@ public class CrawlControlPanel extends JPanel {
     private JButton crawlUrlButton;
     private JComboBox<String> disasterTypeCombo;
     private JButton addNewDisasterButton;
-    private JComboBox<String> platformSelector;
-    private String selectedPlatform = "FACEBOOK";
+    private String selectedPlatform = "YOUTUBE";
 
     public CrawlControlPanel(Model model) {
         this.model = model;
@@ -39,7 +37,7 @@ public class CrawlControlPanel extends JPanel {
 
     private void initializeUI() {
         setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createTitledBorder("Web Crawler Control - Crawl Facebook Posts"));
+        setBorder(BorderFactory.createTitledBorder("Web Crawler Control - Crawl YouTube Videos"));
 
         // Top: Platform selector
         JPanel platformPanel = createPlatformSelectorPanel();
@@ -63,27 +61,14 @@ public class CrawlControlPanel extends JPanel {
         panel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
-        panel.add(new JLabel("Select Platform:"));
-        platformSelector = new JComboBox<>(new String[]{"FACEBOOK", "YOUTUBE"});
+        panel.add(new JLabel("Platform:"));
+        JComboBox<String> platformSelector = new JComboBox<>(new String[]{"YOUTUBE"});
         platformSelector.setFont(new Font("Arial", Font.PLAIN, 12));
-        platformSelector.addActionListener(e -> updateUIForPlatform());
+        platformSelector.addActionListener(e -> selectedPlatform = (String) platformSelector.getSelectedItem());
         panel.add(platformSelector);
+        selectedPlatform = "YOUTUBE";
 
         return panel;
-    }
-
-    private void updateUIForPlatform() {
-        selectedPlatform = (String) platformSelector.getSelectedItem();
-        
-        if ("YOUTUBE".equals(selectedPlatform)) {
-            setBorder(BorderFactory.createTitledBorder("Web Crawler Control - Crawl YouTube Videos"));
-            crawlButton.setText("Crawl YouTube Data");
-            crawlUrlButton.setText("Crawl Videos from URLs");
-        } else {
-            setBorder(BorderFactory.createTitledBorder("Web Crawler Control - Crawl Facebook Posts"));
-            crawlButton.setText("Crawl Facebook Data");
-            crawlUrlButton.setText("Crawl Posts from URLs");
-        }
     }
 
     private JPanel createConfigPanel() {
@@ -98,14 +83,14 @@ public class CrawlControlPanel extends JPanel {
         panel.add(section1Label);
         panel.add(Box.createVerticalStrut(8));
 
-        // Post limit
-        panel.add(new JLabel("Max Posts to Crawl:"));
+        // Video limit
+        panel.add(new JLabel("Max Videos to Crawl:"));
         postLimitSpinner = new JSpinner(new SpinnerNumberModel(5, 1, 100, 1));
         panel.add(postLimitSpinner);
         panel.add(Box.createVerticalStrut(10));
 
-        // Comment limit per post
-        panel.add(new JLabel("Max Comments per Post:"));
+        // Comment limit per video
+        panel.add(new JLabel("Max Comments per Video:"));
         commentLimitSpinner = new JSpinner(new SpinnerNumberModel(10, 0, 100, 5));
         panel.add(commentLimitSpinner);
         panel.add(Box.createVerticalStrut(10));
@@ -121,24 +106,24 @@ public class CrawlControlPanel extends JPanel {
         panel.add(Box.createVerticalStrut(10));
 
         // Crawl button
-        crawlButton = new JButton("Crawl Facebook Data");
+        crawlButton = new JButton("Crawl Data");
         crawlButton.setFont(new Font("Arial", Font.BOLD, 12));
         crawlButton.setMaximumSize(new Dimension(250, 40));
         crawlButton.addActionListener(e -> startCrawling());
         panel.add(crawlButton);
         panel.add(Box.createVerticalStrut(15));
 
-        // ===== SECTION 2: Multiple Post URLs =====
-        JLabel section2Label = new JLabel("SECTION 2: Crawl Posts by URLs");
+        // ===== SECTION 2: Multiple Video URLs =====
+        JLabel section2Label = new JLabel("SECTION 2: Crawl Videos by URLs");
         section2Label.setFont(new Font("Arial", Font.BOLD, 11));
         panel.add(section2Label);
         panel.add(Box.createVerticalStrut(8));
 
-        panel.add(new JLabel("Post URLs (1 per line):"));
+        panel.add(new JLabel("Video URLs (1 per line):"));
         postUrlField = new JTextArea(6, 25);
         postUrlField.setLineWrap(true);
         postUrlField.setWrapStyleWord(true);
-        postUrlField.setText("https://www.facebook.com/");
+        postUrlField.setText("https://www.youtube.com/");
         JScrollPane urlScroll = new JScrollPane(postUrlField);
         panel.add(urlScroll);
         panel.add(Box.createVerticalStrut(8));
@@ -159,7 +144,7 @@ public class CrawlControlPanel extends JPanel {
         panel.add(addNewDisasterButton);
         panel.add(Box.createVerticalStrut(8));
 
-        crawlUrlButton = new JButton("Crawl Posts from URLs");
+        crawlUrlButton = new JButton("Crawl Videos from URLs");
         crawlUrlButton.setFont(new Font("Arial", Font.BOLD, 12));
         crawlUrlButton.setMaximumSize(new Dimension(250, 40));
         crawlUrlButton.addActionListener(e -> startCrawlingByUrl());
@@ -254,121 +239,61 @@ public class CrawlControlPanel extends JPanel {
                 List<Post> posts = new ArrayList<>();
                 boolean usedRealCrawler = false;
 
-                // Check selected platform
-                if ("YOUTUBE".equals(selectedPlatform)) {
-                    // YouTube crawling
-                    crawlResultsArea.setText("Starting YouTube crawl...\n");
-                    crawlResultsArea.append("Post Limit: " + postLimit + "\n");
-                    crawlResultsArea.append("Comment Limit per Post: " + commentLimit + "\n");
-                    crawlResultsArea.append("Keywords/Hashtags: " + String.join(", ", hashtags) + "\n");
-                    crawlResultsArea.append("-".repeat(60) + "\n\n");
+                // YouTube crawling only
+                crawlResultsArea.setText("Starting YouTube crawl...\n");
+                crawlResultsArea.append("Video Limit: " + postLimit + "\n");
+                crawlResultsArea.append("Comment Limit per Video: " + commentLimit + "\n");
+                crawlResultsArea.append("Keywords/Hashtags: " + String.join(", ", hashtags) + "\n");
+                crawlResultsArea.append("-".repeat(60) + "\n\n");
 
-                    try {
-                        crawlResultsArea.append("Initializing YouTube Selenium crawler...\n");
-                        crawlResultsArea.append("Checking for ChromeDriver and Chrome browser...\n\n");
-                        
-                        YouTubeCrawler youtubeCrawler = new YouTubeCrawler();
-                        youtubeCrawler.initialize();
-                        crawler = youtubeCrawler;
-                        
-                        if (youtubeCrawler.isInitialized()) {
-                            crawlResultsArea.append("✓ YouTube crawler initialized\n");
-                            crawlResultsArea.append("Crawling from YouTube keywords...\n\n");
-                            posts = youtubeCrawler.crawlPosts(new ArrayList<>(List.of(keywords)), hashtags, postLimit);
-                            usedRealCrawler = true;
-                            crawlResultsArea.append("✓ Successfully crawled " + posts.size() + " videos from YouTube\n\n");
-                        } else {
-                            throw new Exception("Failed to initialize ChromeDriver - check console for details");
-                        }
-                    } catch (IllegalStateException ise) {
-                        crawlResultsArea.append("❌ ChromeDriver Not Found\n");
-                        crawlResultsArea.append("Error: " + ise.getMessage() + "\n\n");
-                        crawlResultsArea.append("SOLUTIONS:\n");
-                        crawlResultsArea.append("1. Install Chrome: https://www.google.com/chrome/\n");
-                        crawlResultsArea.append("2. Download ChromeDriver: https://chromedriver.chromium.org/\n");
-                        crawlResultsArea.append("3. Move to /usr/local/bin/ or add to PATH\n\n");
-                        crawlResultsArea.append("For now, using sample data...\n\n");
-                        
-                        // Fallback to mock data
-                        MockDataCrawler mockCrawler = new MockDataCrawler();
-                        posts = mockCrawler.crawlPosts(
-                            new ArrayList<>(List.of(keywords)),
-                            hashtags,
-                            postLimit
-                        );
-                        usedRealCrawler = false;
-                    } catch (Exception ytError) {
-                        crawlResultsArea.append("⚠ YouTube crawler unavailable\n");
-                        crawlResultsArea.append("Reason: " + ytError.getClass().getSimpleName() + "\n");
-                        crawlResultsArea.append("Details: " + ytError.getMessage() + "\n\n");
-                        crawlResultsArea.append("Falling back to sample data generator...\n\n");
-                        
-                        // Fallback to mock data
-                        MockDataCrawler mockCrawler = new MockDataCrawler();
-                        posts = mockCrawler.crawlPosts(
-                            new ArrayList<>(List.of(keywords)),
-                            hashtags,
-                            postLimit
-                        );
-                        usedRealCrawler = false;
+                try {
+                    crawlResultsArea.append("Initializing YouTube Selenium crawler...\n");
+                    crawlResultsArea.append("Checking for ChromeDriver and Chrome browser...\n\n");
+                    
+                    YouTubeCrawler youtubeCrawler = new YouTubeCrawler();
+                    youtubeCrawler.initialize();
+                    crawler = youtubeCrawler;
+                    
+                    if (youtubeCrawler.isInitialized()) {
+                        crawlResultsArea.append("✓ YouTube crawler initialized\n");
+                        crawlResultsArea.append("Crawling from YouTube keywords...\n\n");
+                        posts = youtubeCrawler.crawlPosts(new ArrayList<>(List.of(keywords)), hashtags, postLimit);
+                        usedRealCrawler = true;
+                        crawlResultsArea.append("✓ Successfully crawled " + posts.size() + " videos from YouTube\n\n");
+                    } else {
+                        throw new Exception("Failed to initialize ChromeDriver - check console for details");
                     }
-                } else {
-                    // Facebook crawling (original code)
-                    crawlResultsArea.setText("Starting Facebook crawl...\n");
-                    crawlResultsArea.append("Post Limit: " + postLimit + "\n");
-                    crawlResultsArea.append("Comment Limit per Post: " + commentLimit + "\n");
-                    crawlResultsArea.append("Hashtags: " + String.join(", ", hashtags) + "\n");
-                    crawlResultsArea.append("-".repeat(60) + "\n\n");
-
-                    try {
-                        crawlResultsArea.append("Initializing Facebook Selenium crawler...\n");
-                        crawlResultsArea.append("Checking for ChromeDriver and Chrome browser...\n\n");
-                        
-                        FacebookCrawler facebookCrawler = new FacebookCrawler();
-                        facebookCrawler.initialize();
-                        crawler = facebookCrawler;
-                        
-                        if (facebookCrawler.isInitialized()) {
-                            crawlResultsArea.append("✓ Facebook crawler initialized\n");
-                            crawlResultsArea.append("Crawling from Facebook hashtags...\n\n");
-                            posts = facebookCrawler.crawlPosts(new ArrayList<>(List.of(keywords)), hashtags, postLimit);
-                            usedRealCrawler = true;
-                            crawlResultsArea.append("✓ Successfully crawled " + posts.size() + " posts from Facebook\n\n");
-                        } else {
-                            throw new Exception("Failed to initialize ChromeDriver - check console for details");
-                        }
-                    } catch (IllegalStateException ise) {
-                        crawlResultsArea.append("❌ ChromeDriver Not Found\n");
-                        crawlResultsArea.append("Error: " + ise.getMessage() + "\n\n");
-                        crawlResultsArea.append("SOLUTIONS:\n");
-                        crawlResultsArea.append("1. Install Chrome: https://www.google.com/chrome/\n");
-                        crawlResultsArea.append("2. Download ChromeDriver: https://chromedriver.chromium.org/\n");
-                        crawlResultsArea.append("3. Move to /usr/local/bin/ or add to PATH\n\n");
-                        crawlResultsArea.append("For now, using sample data...\n\n");
-                        
-                        // Fallback to mock data
-                        MockDataCrawler mockCrawler = new MockDataCrawler();
-                        posts = mockCrawler.crawlPosts(
-                            new ArrayList<>(List.of(keywords)),
-                            hashtags,
-                            postLimit
-                        );
-                        usedRealCrawler = false;
-                    } catch (Exception fbError) {
-                        crawlResultsArea.append("⚠ Facebook crawler unavailable\n");
-                        crawlResultsArea.append("Reason: " + fbError.getClass().getSimpleName() + "\n");
-                        crawlResultsArea.append("Details: " + fbError.getMessage() + "\n\n");
-                        crawlResultsArea.append("Falling back to sample data generator...\n\n");
-                        
-                        // Fallback to mock data
-                        MockDataCrawler mockCrawler = new MockDataCrawler();
-                        posts = mockCrawler.crawlPosts(
-                            new ArrayList<>(List.of(keywords)),
-                            hashtags,
-                            postLimit
-                        );
-                        usedRealCrawler = false;
-                    }
+                } catch (IllegalStateException ise) {
+                    crawlResultsArea.append("❌ ChromeDriver Not Found\n");
+                    crawlResultsArea.append("Error: " + ise.getMessage() + "\n\n");
+                    crawlResultsArea.append("SOLUTIONS:\n");
+                    crawlResultsArea.append("1. Install Chrome: https://www.google.com/chrome/\n");
+                    crawlResultsArea.append("2. Download ChromeDriver: https://chromedriver.chromium.org/\n");
+                    crawlResultsArea.append("3. Move to /usr/local/bin/ or add to PATH\n\n");
+                    crawlResultsArea.append("For now, using sample data...\n\n");
+                    
+                    // Fallback to mock data
+                    MockDataCrawler mockCrawler = new MockDataCrawler();
+                    posts = mockCrawler.crawlPosts(
+                        new ArrayList<>(List.of(keywords)),
+                        hashtags,
+                        postLimit
+                    );
+                    usedRealCrawler = false;
+                } catch (Exception ytError) {
+                    crawlResultsArea.append("⚠ YouTube crawler unavailable\n");
+                    crawlResultsArea.append("Reason: " + ytError.getClass().getSimpleName() + "\n");
+                    crawlResultsArea.append("Details: " + ytError.getMessage() + "\n\n");
+                    crawlResultsArea.append("Falling back to sample data generator...\n\n");
+                    
+                    // Fallback to mock data
+                    MockDataCrawler mockCrawler = new MockDataCrawler();
+                    posts = mockCrawler.crawlPosts(
+                        new ArrayList<>(List.of(keywords)),
+                        hashtags,
+                        postLimit
+                    );
+                    usedRealCrawler = false;
                 }
 
                 // Only add mock comments if using mock data (real crawler already has comments)
@@ -382,9 +307,7 @@ public class CrawlControlPanel extends JPanel {
                 for (Post post : posts) {
                     // Automatically assign disaster type based on keywords
                     DisasterType disasterType = findDisasterTypeForPost(post, hashtags);
-                    if (post instanceof FacebookPost) {
-                        ((FacebookPost) post).setDisasterType(disasterType);
-                    } else if (post instanceof YouTubePost) {
+                    if (post instanceof YouTubePost) {
                         ((YouTubePost) post).setDisasterType(disasterType);
                     }
                     model.addPost(post);
@@ -406,9 +329,7 @@ public class CrawlControlPanel extends JPanel {
                 // Cleanup crawler resources
                 if (crawler != null) {
                     try {
-                        if (crawler instanceof FacebookCrawler) {
-                            ((FacebookCrawler) crawler).shutdown();
-                        } else if (crawler instanceof YouTubeCrawler) {
+                        if (crawler instanceof YouTubeCrawler) {
                             ((YouTubeCrawler) crawler).shutdown();
                         }
                     } catch (Exception e) {
@@ -448,41 +369,25 @@ public class CrawlControlPanel extends JPanel {
                 String[] urls = urlText.split("\n");
                 List<String> validUrls = new ArrayList<>();
                 
-                if ("YOUTUBE".equals(selectedPlatform)) {
-                    // YouTube URL validation
-                    for (String url : urls) {
-                        String cleanUrl = url.trim();
-                        if (!cleanUrl.isEmpty() && (cleanUrl.contains("youtube.com") || cleanUrl.contains("youtu.be"))) {
-                            validUrls.add(cleanUrl);
-                        }
+                // YouTube URL validation only
+                for (String url : urls) {
+                    String cleanUrl = url.trim();
+                    if (!cleanUrl.isEmpty() && (cleanUrl.contains("youtube.com") || cleanUrl.contains("youtu.be"))) {
+                        validUrls.add(cleanUrl);
                     }
-                    
-                    if (validUrls.isEmpty()) {
-                        statusLabel.setText("✗ No valid YouTube URLs found");
-                        crawlResultsArea.setText("Error: Please enter valid YouTube URLs (youtube.com or youtu.be)\n");
-                        return;
-                    }
-                } else {
-                    // Facebook URL validation
-                    for (String url : urls) {
-                        String cleanUrl = url.trim();
-                        if (!cleanUrl.isEmpty() && cleanUrl.contains("facebook.com")) {
-                            validUrls.add(cleanUrl);
-                        }
-                    }
-                    
-                    if (validUrls.isEmpty()) {
-                        statusLabel.setText("✗ No valid Facebook URLs found");
-                        crawlResultsArea.setText("Error: Please enter valid facebook.com URLs\n");
-                        return;
-                    }
+                }
+                
+                if (validUrls.isEmpty()) {
+                    statusLabel.setText("✗ No valid YouTube URLs found");
+                    crawlResultsArea.setText("Error: Please enter valid YouTube URLs (youtube.com or youtu.be)\n");
+                    return;
                 }
 
                 statusLabel.setText("⏳ Crawling " + validUrls.size() + " URL(s) for disaster: " + selectedDisasterName);
                 progressBar.setIndeterminate(true);
 
                 crawlResultsArea.setText("Starting crawl from user-provided URLs...\n");
-                crawlResultsArea.append("Platform: " + selectedPlatform + "\n");
+                crawlResultsArea.append("Platform: YouTube\n");
                 crawlResultsArea.append("Disaster Type: " + selectedDisasterName + "\n");
                 crawlResultsArea.append("Total URLs: " + validUrls.size() + "\n");
                 crawlResultsArea.append("-".repeat(60) + "\n\n");
@@ -500,23 +405,15 @@ public class CrawlControlPanel extends JPanel {
                     try {
                         Post post = null;
                         
-                        if ("YOUTUBE".equals(selectedPlatform)) {
-                            // Use YouTubeCrawler for YouTube URLs
-                            YouTubeCrawler youtubeCrawler = new YouTubeCrawler();
-                            youtubeCrawler.initialize();
-                            post = youtubeCrawler.crawlVideoByUrl(postUrl);
-                            youtubeCrawler.shutdown();
-                        } else {
-                            // Use FacebookCrawler for Facebook URLs
-                            FacebookCrawler facebookCrawler = new FacebookCrawler();
-                            post = facebookCrawler.crawlPostByUrl(postUrl);
-                        }
+                        // Use YouTubeCrawler for YouTube URLs
+                        YouTubeCrawler youtubeCrawler = new YouTubeCrawler();
+                        youtubeCrawler.initialize();
+                        post = youtubeCrawler.crawlVideoByUrl(postUrl);
+                        youtubeCrawler.shutdown();
                         
                         if (post != null) {
                             // Set the disaster type
-                            if (post instanceof FacebookPost) {
-                                ((FacebookPost) post).setDisasterType(selectedDisaster);
-                            } else if (post instanceof YouTubePost) {
+                            if (post instanceof YouTubePost) {
                                 ((YouTubePost) post).setDisasterType(selectedDisaster);
                             }
                             
@@ -542,7 +439,7 @@ public class CrawlControlPanel extends JPanel {
                 // Display summary
                 crawlResultsArea.append("\n" + "=".repeat(60) + "\n");
                 crawlResultsArea.append("📊 CRAWL SUMMARY\n");
-                crawlResultsArea.append("Platform: " + selectedPlatform + "\n");
+                crawlResultsArea.append("Platform: YouTube\n");
                 crawlResultsArea.append("Disaster Type: " + selectedDisasterName + "\n");
                 crawlResultsArea.append("Total URLs: " + validUrls.size() + "\n");
                 crawlResultsArea.append("✓ Successful: " + successCount + "\n");
@@ -672,12 +569,12 @@ public class CrawlControlPanel extends JPanel {
                 ReliefItem.Category category = categories[p % categories.length];
                 ReliefItem reliefItem = new ReliefItem(category, "Relief for " + category.getDisplayName(), 3);
 
-                FacebookPost post = new FacebookPost(
-                    "POST_SAMPLE_" + p,
-                    "Post about " + topic + " - " + category.getDisplayName() + " assistance needed",
+                YouTubePost post = new YouTubePost(
+                    "VIDEO_SAMPLE_" + p,
+                    "Video about " + topic + " - " + category.getDisplayName() + " assistance needed",
                     LocalDateTime.now().minusHours(p),
                     "Author_" + p,
-                    "PAGE_" + topic
+                    "CHANNEL_" + topic
                 );
 
                 Sentiment.SentimentType sentiment = Sentiment.SentimentType.values()[p % 3];

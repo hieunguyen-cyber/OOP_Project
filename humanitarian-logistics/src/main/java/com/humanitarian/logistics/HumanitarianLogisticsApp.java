@@ -3,7 +3,7 @@ package com.humanitarian.logistics;
 import com.humanitarian.logistics.ui.Model;
 import com.humanitarian.logistics.ui.View;
 import com.humanitarian.logistics.model.*;
-import com.humanitarian.logistics.sentiment.SimpleSentimentAnalyzer;
+import com.humanitarian.logistics.sentiment.PythonSentimentAnalyzer;
 import com.humanitarian.logistics.database.DataPersistenceManager;
 
 /**
@@ -23,8 +23,11 @@ public class HumanitarianLogisticsApp {
             // Initialize MVC components
             Model model = new Model();
 
-            // Initialize with default sentiment analyzer
-            SimpleSentimentAnalyzer analyzer = new SimpleSentimentAnalyzer();
+            // Initialize with Python sentiment analyzer (Vietnamese + English support)
+            PythonSentimentAnalyzer analyzer = new PythonSentimentAnalyzer(
+                "http://localhost:5001",
+                "xlm-roberta-large-xnli (Vietnamese + English)"
+            );
             model.setSentimentAnalyzer(analyzer);
 
             // Note: Sample data is NOT loaded automatically

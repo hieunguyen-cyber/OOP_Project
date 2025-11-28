@@ -248,12 +248,12 @@ public class MockDataCrawler implements DataCrawler {
                     random.nextInt(4) + 2
                 );
 
-                FacebookPost post = new FacebookPost(
+                YouTubePost post = new YouTubePost(
                     "POST_MOCK_" + category.name() + "_" + System.currentTimeMillis() + "_" + postIndex,
                     content,
                     postTime,
                     authors[postIndex % authors.length],
-                    "PAGE_" + (postIndex % 3 == 0 ? "OFFICIAL" : "COMMUNITY")
+                    "CHANNEL_" + (postIndex % 3 == 0 ? "OFFICIAL" : "COMMUNITY")
                 );
 
                 // Analyze sentiment instead of using default
@@ -261,7 +261,6 @@ public class MockDataCrawler implements DataCrawler {
                 post.setSentiment(analyzedSentiment);
                 post.setReliefItem(reliefItem);
                 post.setLikes(random.nextInt(800) + 30);
-                post.setShares(random.nextInt(200) + 5);
                 
                 // Set disaster type - randomly assign from available disasters
                 List<String> disasterNames = DisasterManager.getInstance().getAllDisasterNames();
@@ -287,7 +286,7 @@ public class MockDataCrawler implements DataCrawler {
     /**
      * Add realistic comments with actual sentiment analysis and category classification
      */
-    private void addMockComments(FacebookPost post, ReliefItem.Category category, int contentIndex) {
+    private void addMockComments(YouTubePost post, ReliefItem.Category category, int contentIndex) {
         Map<ReliefItem.Category, String[]> commentsByCategory = new HashMap<>();
 
         commentsByCategory.put(ReliefItem.Category.CASH, new String[]{

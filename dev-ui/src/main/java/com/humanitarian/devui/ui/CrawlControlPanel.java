@@ -1,7 +1,6 @@
 package com.humanitarian.devui.ui;
 
 import com.humanitarian.devui.model.*;
-import com.humanitarian.devui.crawler.FacebookCrawler;
 import com.humanitarian.devui.crawler.YouTubeCrawler;
 import com.humanitarian.devui.crawler.MockDataCrawler;
 import com.humanitarian.devui.database.DatabaseManager;
@@ -31,7 +30,7 @@ public class CrawlControlPanel extends JPanel {
     private JComboBox<String> disasterTypeCombo;
     private JButton addNewDisasterButton;
     private JComboBox<String> platformSelector;
-    private String selectedPlatform = "FACEBOOK";
+    private String selectedPlatform = "YOUTUBE";
 
     public CrawlControlPanel(Model model, SessionDataBuffer buffer) {
         this.model = model;
@@ -71,7 +70,7 @@ public class CrawlControlPanel extends JPanel {
         platformLabel.setFont(new Font("Arial", Font.BOLD, 12));
         panel.add(platformLabel);
         
-        platformSelector = new JComboBox<>(new String[]{"FACEBOOK", "YOUTUBE"});
+        platformSelector = new JComboBox<>(new String[]{"YOUTUBE"});
         platformSelector.setFont(new Font("Arial", Font.PLAIN, 12));
         platformSelector.addActionListener(e -> updateUIForPlatform());
         platformSelector.setPreferredSize(new Dimension(150, 30));
@@ -82,18 +81,17 @@ public class CrawlControlPanel extends JPanel {
 
     private void updateUIForPlatform() {
         selectedPlatform = (String) platformSelector.getSelectedItem();
-        String platformName = selectedPlatform.equals("FACEBOOK") ? "Facebook" : "YouTube";
-        setBorder(BorderFactory.createTitledBorder("Web Crawler Control - Crawl " + platformName + " Posts"));
+        setBorder(BorderFactory.createTitledBorder("Web Crawler Control - Crawl Data"));
         
         if (crawlButton != null) {
-            crawlButton.setText("Crawl " + platformName + " Data");
+            crawlButton.setText("Crawl Data");
         }
         if (crawlUrlButton != null) {
-            crawlUrlButton.setText("Crawl Posts from URLs");
+            crawlUrlButton.setText("Crawl Videos from URLs");
         }
         
-        crawlResultsArea.setText("Platform switched to " + platformName + "\n");
-        statusLabel.setText("Platform: " + platformName);
+        crawlResultsArea.setText("Ready to crawl YouTube data\n");
+        statusLabel.setText("Platform: YouTube");
     }
 
     private JPanel createConfigPanel() {
@@ -131,7 +129,7 @@ public class CrawlControlPanel extends JPanel {
         panel.add(Box.createVerticalStrut(10));
 
         // Crawl button
-        crawlButton = new JButton("Crawl Facebook Data");
+        crawlButton = new JButton("Crawl Data");
         crawlButton.setFont(new Font("Arial", Font.BOLD, 12));
         crawlButton.setMaximumSize(new Dimension(250, 40));
         crawlButton.addActionListener(e -> startCrawling());
@@ -148,7 +146,7 @@ public class CrawlControlPanel extends JPanel {
         postUrlField = new JTextArea(6, 25);
         postUrlField.setLineWrap(true);
         postUrlField.setWrapStyleWord(true);
-        postUrlField.setText("https://www.facebook.com/");
+        postUrlField.setText("https://www.youtube.com/watch?v=");
         JScrollPane urlScroll = new JScrollPane(postUrlField);
         panel.add(urlScroll);
         panel.add(Box.createVerticalStrut(8));
@@ -261,9 +259,8 @@ public class CrawlControlPanel extends JPanel {
                 statusLabel.setText("⏳ Crawling in progress... (This may take a while)");
                 progressBar.setIndeterminate(true);
 
-                String platformName = selectedPlatform.equals("FACEBOOK") ? "Facebook" : "YouTube";
-                crawlResultsArea.setText("Starting " + platformName + " crawl...\n");
-                crawlResultsArea.append("Platform: " + platformName + "\n");
+                crawlResultsArea.setText("Starting YouTube crawl...\n");
+                crawlResultsArea.append("Platform: YouTube\n");
                 crawlResultsArea.append("Post Limit: " + postLimit + "\n");
                 crawlResultsArea.append("Comment Limit per Post: " + commentLimit + "\n");
                 crawlResultsArea.append("Keywords: " + String.join(", ", hashtags) + "\n");
@@ -272,11 +269,11 @@ public class CrawlControlPanel extends JPanel {
                 List<Post> posts = new ArrayList<>();
                 boolean usedRealCrawler = false;
                 
-                // Initialize appropriate crawler based on platform selection
+                // Initialize YouTube crawler
                 try {
-                    if (selectedPlatform.equals("FACEBOOK")) {
-                        crawlResultsArea.append("Initializing Facebook Selenium crawler...\n");
-                        FacebookCrawler facebookCrawler = new FacebookCrawler();
+                    if ("YOUTUBE".equals(selectedPlatform)) {
+                        crawlResultsArea.append("Initializing YouTube Selenium crawler...\n");
+                        YouTubeCrawler facebookCrawler = new YouTubeCrawler();
                         facebookCrawler.initialize();
                         
                         if (facebookCrawler.isInitialized()) {
@@ -364,10 +361,10 @@ public class CrawlControlPanel extends JPanel {
                     }
                     
                     // Automatically assign disaster type based on keywords
-                    if (post instanceof FacebookPost) {
-                        FacebookPost fbPost = (FacebookPost) post;
-                        DisasterType disasterType = findDisasterTypeForPost(fbPost, hashtags);
-                        fbPost.setDisasterType(disasterType);
+                    if (post instanceof YouTubePost) {
+                        YouTubePost ytPost = (YouTubePost) post;
+                        DisasterType disasterType = findDisasterTypeForPost(ytPost, hashtags);
+                        ytPost.setDisasterType(disasterType);
                     }
                     buffer.addPost(post);
                     addedCount++;
@@ -395,8 +392,8 @@ public class CrawlControlPanel extends JPanel {
                 // Cleanup crawler resources
                 if (crawler != null) {
                     try {
-                        if (crawler instanceof FacebookCrawler) {
-                            ((FacebookCrawler) crawler).shutdown();
+                        if (crawler instanceof YouTubeCrawler) {
+                            ((YouTubeCrawler) crawler).shutdown();
                         } else if (crawler instanceof YouTubeCrawler) {
                             ((YouTubeCrawler) crawler).shutdown();
                         }
@@ -451,20 +448,6 @@ public class CrawlControlPanel extends JPanel {
                         crawlResultsArea.setText("Error: Please enter valid YouTube URLs (youtube.com or youtu.be)\n");
                         return;
                     }
-                } else {
-                    // Facebook URL validation
-                    for (String url : urls) {
-                        String cleanUrl = url.trim();
-                        if (!cleanUrl.isEmpty() && cleanUrl.contains("facebook.com")) {
-                            validUrls.add(cleanUrl);
-                        }
-                    }
-                    
-                    if (validUrls.isEmpty()) {
-                        statusLabel.setText("✗ No valid Facebook URLs found");
-                        crawlResultsArea.setText("Error: Please enter valid facebook.com URLs\n");
-                        return;
-                    }
                 }
 
                 statusLabel.setText("⏳ Crawling " + validUrls.size() + " URL(s) for disaster: " + selectedDisasterName);
@@ -496,15 +479,17 @@ public class CrawlControlPanel extends JPanel {
                             post = youtubeCrawler.crawlVideoByUrl(postUrl);
                             youtubeCrawler.shutdown();
                         } else {
-                            // Use FacebookCrawler for Facebook URLs
-                            FacebookCrawler facebookCrawler = new FacebookCrawler();
-                            post = facebookCrawler.crawlPostByUrl(postUrl);
+                            // Use YouTubeCrawler for YouTube URLs
+                            YouTubeCrawler facebookCrawler = new YouTubeCrawler();
+                            facebookCrawler.initialize();
+                            post = facebookCrawler.crawlVideoByUrl(postUrl);
+                            facebookCrawler.shutdown();
                         }
                         
                         if (post != null) {
                             // Set the disaster type
-                            if (post instanceof FacebookPost) {
-                                ((FacebookPost) post).setDisasterType(selectedDisaster);
+                            if (post instanceof YouTubePost) {
+                                ((YouTubePost) post).setDisasterType(selectedDisaster);
                             } else if (post instanceof YouTubePost) {
                                 ((YouTubePost) post).setDisasterType(selectedDisaster);
                             }
@@ -773,7 +758,7 @@ public class CrawlControlPanel extends JPanel {
      * Find the appropriate disaster type for a post based on keywords used
      */
     @SuppressWarnings("unused")
-    private DisasterType findDisasterTypeForPost(FacebookPost ignored, List<String> keywords) {
+    private DisasterType findDisasterTypeForPost(YouTubePost ignored, List<String> keywords) {
         DisasterManager manager = DisasterManager.getInstance();
         
         // Try to find a matching disaster type from the keywords
@@ -804,7 +789,7 @@ public class CrawlControlPanel extends JPanel {
                 ReliefItem.Category category = categories[p % categories.length];
                 ReliefItem reliefItem = new ReliefItem(category, "Relief for " + category.getDisplayName(), 3);
 
-                FacebookPost post = new FacebookPost(
+                YouTubePost post = new YouTubePost(
                     "POST_SAMPLE_" + p,
                     "Post about " + topic + " - " + category.getDisplayName() + " assistance needed",
                     java.time.LocalDateTime.now().minusHours(p),

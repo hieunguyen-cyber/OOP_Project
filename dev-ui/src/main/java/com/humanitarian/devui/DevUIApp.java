@@ -5,7 +5,7 @@ import com.humanitarian.devui.ui.View;
 import com.humanitarian.devui.model.*;
 import com.humanitarian.devui.database.DatabaseManager;
 import com.humanitarian.devui.database.DataPersistenceManager;
-import com.humanitarian.devui.sentiment.SimpleSentimentAnalyzer;
+import com.humanitarian.devui.sentiment.PythonSentimentAnalyzer;
 
 /**
  * Main application entry point.
@@ -24,8 +24,11 @@ public class DevUIApp {
             // Initialize MVC components
             Model model = new Model();
 
-            // Initialize with default sentiment analyzer
-            SimpleSentimentAnalyzer analyzer = new SimpleSentimentAnalyzer();
+            // Initialize with Python sentiment analyzer (Vietnamese + English support)
+            PythonSentimentAnalyzer analyzer = new PythonSentimentAnalyzer(
+                "http://localhost:5001", 
+                "xlm-roberta-large-xnli (Vietnamese + English)"
+            );
             model.setSentimentAnalyzer(analyzer);
 
             // Load saved data from database on startup

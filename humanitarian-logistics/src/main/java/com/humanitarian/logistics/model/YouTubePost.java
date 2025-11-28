@@ -22,6 +22,8 @@ public class YouTubePost extends Post {
         this.likes = 0;
         this.views = 0;
         this.disasterType = null;
+        // Initialize with default ReliefItem
+        this.setReliefItem(new ReliefItem(ReliefItem.Category.FOOD, "General Relief", 3));
     }
 
     public String getChannelId() {

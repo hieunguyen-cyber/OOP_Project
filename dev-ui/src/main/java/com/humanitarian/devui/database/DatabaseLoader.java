@@ -181,11 +181,11 @@ public class DatabaseLoader {
         System.out.println("  TOTAL: 31 posts with diverse dates & relief types");
     }
     
-    private static FacebookPost createPost(int id, String content, LocalDateTime date,
+    private static YouTubePost createPost(int id, String content, LocalDateTime date,
                                           String author, String keyword, DisasterType disaster,
                                           Sentiment.SentimentType sentiment, double confidence,
                                           ReliefItem.Category category, String description) {
-        FacebookPost post = new FacebookPost(
+        YouTubePost post = new YouTubePost(
             "db_" + id,
             content,
             date,

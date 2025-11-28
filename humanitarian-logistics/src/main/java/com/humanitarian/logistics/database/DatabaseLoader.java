@@ -146,7 +146,7 @@ public class DatabaseLoader {
              ResultSet rs = stmt.executeQuery(sql)) {
             
             while (rs.next()) {
-                FacebookPost post = new FacebookPost(
+                YouTubePost post = new YouTubePost(
                     rs.getString("post_id"),
                     rs.getString("content"),
                     LocalDateTime.parse(rs.getString("created_at")),

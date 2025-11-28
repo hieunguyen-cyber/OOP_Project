@@ -176,6 +176,53 @@ public class Model {
     }
 
     /**
+     * Batch analyze all posts through both classification models.
+     * Runs all posts through ReliefItemClassifier and SentimentAnalyzer,
+     * then updates database with new classifications.
+     * 
+     * @return number of posts analyzed
+     */
+    public int analyzeAllPosts() {
+        System.out.println("Starting batch analysis of " + posts.size() + " posts...");
+        int analyzed = 0;
+
+        for (Post post : posts) {
+            try {
+                // 1. Classify relief category
+                reliefClassifier.classifyPost(post);
+
+                // 2. Analyze sentiment
+                if (sentimentAnalyzer != null) {
+                    Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(post.getContent());
+                    post.setSentiment(sentiment);
+                }
+
+                // 3. Analyze comments in the post
+                for (Comment comment : post.getComments()) {
+                    reliefClassifier.classifyPost(new PostAdapter(comment));
+                    if (sentimentAnalyzer != null) {
+                        Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(comment.getContent());
+                        comment.setSentiment(sentiment);
+                    }
+                }
+
+                // 4. Update database with new classifications
+                dbManager.savePost(post);
+                analyzed++;
+
+                System.out.println("✓ Analyzed post " + analyzed + "/" + posts.size() + 
+                    " (ID: " + post.getPostId() + ")");
+            } catch (Exception e) {
+                System.err.println("✗ Error analyzing post " + post.getPostId() + ": " + e.getMessage());
+            }
+        }
+
+        notifyListeners();
+        System.out.println("✓ Batch analysis complete! Analyzed " + analyzed + "/" + posts.size() + " posts");
+        return analyzed;
+    }
+
+    /**
      * Reset database connection after manual database reset.
      * CRITICAL: Call this after database files are deleted to force reconnection.
      */

@@ -92,9 +92,9 @@ public class AdvancedAnalysisPanel extends JPanel {
                 if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
                     posts = posts.stream()
                         .filter(p -> {
-                            if (p instanceof FacebookPost) {
-                                FacebookPost fbPost = (FacebookPost) p;
-                                DisasterType type = fbPost.getDisasterType();
+                            if (p instanceof YouTubePost) {
+                                YouTubePost ytPost = (YouTubePost) p;
+                                DisasterType type = ytPost.getDisasterType();
                                 return type != null && type.getName().equals(selectedDisaster);
                             }
                             return false;
@@ -434,9 +434,9 @@ public class AdvancedAnalysisPanel extends JPanel {
                 if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
                     posts = posts.stream()
                         .filter(p -> {
-                            if (p instanceof FacebookPost) {
-                                FacebookPost fbPost = (FacebookPost) p;
-                                DisasterType type = fbPost.getDisasterType();
+                            if (p instanceof YouTubePost) {
+                                YouTubePost ytPost = (YouTubePost) p;
+                                DisasterType type = ytPost.getDisasterType();
                                 return type != null && type.getName().equals(selectedDisaster);
                             }
                             return false;
@@ -702,9 +702,9 @@ public class AdvancedAnalysisPanel extends JPanel {
                 if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
                     posts = posts.stream()
                         .filter(p -> {
-                            if (p instanceof FacebookPost) {
-                                FacebookPost fbPost = (FacebookPost) p;
-                                DisasterType type = fbPost.getDisasterType();
+                            if (p instanceof YouTubePost) {
+                                YouTubePost ytPost = (YouTubePost) p;
+                                DisasterType type = ytPost.getDisasterType();
                                 return type != null && type.getName().equals(selectedDisaster);
                             }
                             return false;

@@ -24,6 +24,7 @@ public class AnalysisPanel extends JPanel {
     private JTextArea problem1ResultsArea;
     private JTextArea problem2ResultsArea;
     private JTextArea comparisonResultsArea;
+    private JTextArea batchResultsArea;
     private ChartPanel problem1ChartPanel;
     private ChartPanel problem2ChartPanel;
     private ChartPanel trendChartPanel;
@@ -54,6 +55,10 @@ public class AnalysisPanel extends JPanel {
         // Comparison Tab
         JPanel comparisonPanel = createComparisonPanel();
         tabbedPane.addTab("Overall Comparison", comparisonPanel);
+
+        // Batch Analysis Tab
+        JPanel batchAnalysisPanel = createBatchAnalysisPanel();
+        tabbedPane.addTab("Batch Analysis", batchAnalysisPanel);
 
         add(tabbedPane, BorderLayout.CENTER);
     }
@@ -476,13 +481,117 @@ public class AnalysisPanel extends JPanel {
         // Filter posts by disaster type
         return allPosts.stream()
             .filter(p -> {
-                if (p instanceof FacebookPost) {
-                    FacebookPost fbPost = (FacebookPost) p;
-                    DisasterType type = fbPost.getDisasterType();
+                if (p instanceof YouTubePost) {
+                    YouTubePost ytPost = (YouTubePost) p;
+                    DisasterType type = ytPost.getDisasterType();
                     return type != null && type.getName().equals(disasterName);
                 }
                 return false;
             })
             .collect(Collectors.toList());
+    }
+
+    /**
+     * Create the Batch Analysis panel for re-analyzing all data
+     */
+    private JPanel createBatchAnalysisPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Top: Control panel with analyze button
+        JPanel controlPanel = new JPanel();
+        controlPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        controlPanel.setBorder(BorderFactory.createTitledBorder("Batch Re-Analysis"));
+
+        JLabel infoLabel = new JLabel("Analyze ALL posts through category classifier and sentiment analyzer");
+        controlPanel.add(infoLabel);
+
+        JButton analyzeAllBtn = new JButton("Analyze All Data");
+        analyzeAllBtn.setFont(new Font("Arial", Font.BOLD, 14));
+        analyzeAllBtn.setBackground(new Color(70, 130, 180));
+        analyzeAllBtn.setForeground(Color.WHITE);
+        analyzeAllBtn.setFocusPainted(false);
+        analyzeAllBtn.setPreferredSize(new Dimension(180, 40));
+
+        analyzeAllBtn.addActionListener(e -> {
+            int postCount = model.getPosts().size();
+            if (postCount == 0) {
+                JOptionPane.showMessageDialog(this, 
+                    "No posts to analyze. Please add posts first.", 
+                    "No Data", 
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            int confirm = JOptionPane.showConfirmDialog(this,
+                "This will re-analyze all " + postCount + " posts through both classifiers.\n" +
+                "This may take a moment. Continue?",
+                "Confirm Batch Analysis",
+                JOptionPane.YES_NO_OPTION);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                // Run analysis in a background thread to avoid freezing UI
+                new Thread(() -> {
+                    try {
+                        long startTime = System.currentTimeMillis();
+                        int analyzed = model.analyzeAllPosts();
+                        long duration = System.currentTimeMillis() - startTime;
+
+                        // Show results on EDT
+                        javax.swing.SwingUtilities.invokeLater(() -> {
+                            StringBuilder result = new StringBuilder();
+                            result.append("=== BATCH ANALYSIS COMPLETE ===\n\n");
+                            result.append("Posts Analyzed: ").append(analyzed).append("\n");
+                            result.append("Total Posts: ").append(postCount).append("\n");
+                            result.append("Duration: ").append(String.format("%.2f", duration / 1000.0)).append(" seconds\n\n");
+                            
+                            if (analyzed == postCount) {
+                                result.append("✓ All posts successfully analyzed and saved to database.\n");
+                                result.append("✓ Categories and sentiments have been updated.\n");
+                            } else {
+                                result.append("⚠ Some posts failed to analyze.\n");
+                                result.append("  Successful: ").append(analyzed).append("/").append(postCount).append("\n");
+                            }
+
+                            batchResultsArea.setText(result.toString());
+                            
+                            JOptionPane.showMessageDialog(AnalysisPanel.this,
+                                "Analysis complete!\n" + analyzed + "/" + postCount + " posts analyzed successfully.",
+                                "Success",
+                                JOptionPane.INFORMATION_MESSAGE);
+                        });
+                    } catch (Exception ex) {
+                        javax.swing.SwingUtilities.invokeLater(() -> {
+                            batchResultsArea.setText("Error during batch analysis:\n" + ex.getMessage());
+                            JOptionPane.showMessageDialog(AnalysisPanel.this,
+                                "Error: " + ex.getMessage(),
+                                "Analysis Failed",
+                                JOptionPane.ERROR_MESSAGE);
+                        });
+                    }
+                }).start();
+            }
+        });
+
+        controlPanel.add(analyzeAllBtn);
+        panel.add(controlPanel, BorderLayout.NORTH);
+
+        // Center: Results area
+        batchResultsArea = new JTextArea(20, 60);
+        batchResultsArea.setEditable(false);
+        batchResultsArea.setFont(new Font("Monospaced", Font.PLAIN, 11));
+        batchResultsArea.setText("Ready to analyze all posts.\n\n" +
+                "Click 'Analyze All Data' to:\n" +
+                "1. Re-classify all posts by relief category\n" +
+                "2. Re-analyze sentiment for all posts\n" +
+                "3. Analyze all comments in each post\n" +
+                "4. Update database with new classifications\n\n" +
+                "This operation will overwrite existing classifications.");
+        
+        JScrollPane scrollPane = new JScrollPane(batchResultsArea);
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        return panel;
     }
 }

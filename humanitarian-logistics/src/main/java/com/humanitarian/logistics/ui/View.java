@@ -7,7 +7,7 @@ import java.util.List;
 
 /**
  * View component of MVC pattern - Main GUI with comprehensive tabbed interface.
- * Includes: Crawler Control, Data Collection, Problem 1 & 2 Analysis.
+ * Includes: Web Crawler, Data Collection, Problem 1 & 2 Analysis.
  */
 public class View extends JFrame implements ModelListener {
     private Model model;
@@ -52,19 +52,19 @@ public class View extends JFrame implements ModelListener {
         mainTabbedPane = new JTabbedPane();
         mainTabbedPane.setFont(new Font("Arial", Font.BOLD, 12));
 
-        // Tab 1: Web Crawler Control
+        // Tab 0: Web Crawler
         crawlPanel = new CrawlControlPanel(model);
-        mainTabbedPane.addTab("🌐 Web Crawler", crawlPanel);
+        mainTabbedPane.addTab("🌐 Crawl Web", crawlPanel);
 
-        // Tab 2: Manual Data Entry
+        // Tab 1: Manual Data Entry
         dataCollectionPanel = new DataCollectionPanel(model);
         mainTabbedPane.addTab("✏️  Data Entry", dataCollectionPanel);
 
-        // Tab 3: Comments Management
+        // Tab 2: Comments Management
         commentPanel = new CommentManagementPanel(model);
         mainTabbedPane.addTab("💬 Comments Manager", commentPanel);
 
-        // Tab 4: Advanced Analysis
+        // Tab 3: Advanced Analysis
         advancedAnalysisPanel = new AdvancedAnalysisPanel(model);
         mainTabbedPane.addTab("📊 Analysis", advancedAnalysisPanel);
 
@@ -154,14 +154,6 @@ public class View extends JFrame implements ModelListener {
             persistenceManager.saveDisasters(com.humanitarian.logistics.model.DisasterManager.getInstance());
             
             // Suppress any cleanup errors to prevent "Errors during cleaning null"
-            try {
-                if (crawlPanel != null) {
-                    // Let crawler finish gracefully
-                }
-            } catch (Throwable t) {
-                // Silently ignore
-            }
-            
             try {
                 if (commentPanel != null) {
                     // CommentPanel cleanup

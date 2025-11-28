@@ -218,14 +218,14 @@ public class DisasterManagementPanel extends JPanel {
                 int deletedComments = 0;
 
                 for (Post post : posts) {
-                    if (post instanceof FacebookPost) {
-                        FacebookPost fbPost = (FacebookPost) post;
-                        DisasterType postDisaster = fbPost.getDisasterType();
+                    if (post instanceof YouTubePost) {
+                        YouTubePost ytPost = (YouTubePost) post;
+                        DisasterType postDisaster = ytPost.getDisasterType();
                         
                         // Check if post is tagged with the disaster being deleted
                         if (postDisaster != null && postDisaster.getName().equalsIgnoreCase(disasterName)) {
                             // Delete all comments from this post
-                            java.util.List<Comment> comments = fbPost.getComments();
+                            java.util.List<Comment> comments = ytPost.getComments();
                             int postCommentCount = comments.size();
                             comments.clear();
                             deletedComments += postCommentCount;
@@ -260,10 +260,10 @@ public class DisasterManagementPanel extends JPanel {
             // Count comments associated with this disaster
             int commentCount = 0;
             for (Post post : posts) {
-                if (post instanceof FacebookPost) {
-                    FacebookPost fbPost = (FacebookPost) post;
-                    if (fbPost.getPageId().contains(name)) {
-                        commentCount += fbPost.getComments().size();
+                if (post instanceof YouTubePost) {
+                    YouTubePost ytPost = (YouTubePost) post;
+                    if (ytPost.getChannelId().contains(name)) {
+                        commentCount += ytPost.getComments().size();
                     }
                 }
             }
@@ -300,13 +300,13 @@ public class DisasterManagementPanel extends JPanel {
                         // Delete comments for this disaster
                         List<Post> posts = model.getPosts();
                         for (Post post : posts) {
-                            if (post instanceof FacebookPost) {
-                                FacebookPost fbPost = (FacebookPost) post;
-                                java.util.List<Comment> comments = fbPost.getComments();
+                            if (post instanceof YouTubePost) {
+                                YouTubePost ytPost = (YouTubePost) post;
+                                java.util.List<Comment> comments = ytPost.getComments();
                                 java.util.List<Comment> toRemove = new java.util.ArrayList<>();
 
                                 for (Comment comment : comments) {
-                                    if (fbPost.getPageId().contains(disasterName)) {
+                                    if (ytPost.getChannelId().contains(disasterName)) {
                                         toRemove.add(comment);
                                         deletedComments++;
                                     }

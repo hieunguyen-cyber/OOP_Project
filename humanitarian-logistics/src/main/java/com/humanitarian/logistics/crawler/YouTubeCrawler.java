@@ -3,30 +3,49 @@ package com.humanitarian.logistics.crawler;
 import com.humanitarian.logistics.model.*;
 import com.humanitarian.logistics.sentiment.EnhancedSentimentAnalyzer;
 import com.humanitarian.logistics.sentiment.SentimentAnalyzer;
-import org.openqa.selenium.*;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.support.ui.WebDriverWait;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 
-import java.time.Duration;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.json.*;
 
 /**
- * YouTube Crawler - Crawl videos and comments from YouTube
- * Supports both single video URL and keyword/hashtag search
- * Comment structure identical to Facebook (Post -> Comments)
+ * YouTube Crawler - HTTP-based implementation using YouTube AJAX API
+ * Logic ported directly from ytb_crawl.py (YoutubeCommentDownloader)
+ * 
+ * Key difference: Python uses raw regex with {.+?} pattern
+ * Java uses Pattern.DOTALL to match . including newlines
  */
 public class YouTubeCrawler implements DataCrawler {
-    private WebDriver driver;
-    private WebDriverWait wait;
+    private HttpClient httpClient;
     private boolean initialized;
-    private static final int SCROLL_PAUSE = 2000;
+    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36";
+    private static final String YOUTUBE_VIDEO_URL = "https://www.youtube.com/watch?v={youtube_id}";
+    
+    // Regex patterns - EXACTLY from ytb_crawl.py but with proper Java escaping
+    // Python: r'ytcfg\.set\s*\(\s*({.+?})\s*\)\s*;'
+    // In Java: need to escape the curly braces as \{ and \} in the regex string
+    private static final Pattern YT_CFG_RE = Pattern.compile(
+        "ytcfg\\.set\\s*\\(\\s*(\\{.+?\\})\\s*\\)\\s*;", 
+        Pattern.DOTALL
+    );
+    
+    // Python: r'(?:window\s*\[\s*["\']ytInitialData["\']\s*\]|ytInitialData)\s*=\s*({.+?})\s*;\s*(?:var\s+meta|</script|\n)'
+    private static final Pattern YT_INITIAL_DATA_RE = Pattern.compile(
+        "(?:window\\s*\\[\\s*[\"']ytInitialData[\"']\\s*\\]|ytInitialData)\\s*=\\s*(\\{.+?\\})\\s*;\\s*(?:var\\s+meta|</script|\\n)",
+        Pattern.DOTALL
+    );
+    
     private SentimentAnalyzer sentimentAnalyzer;
 
     public YouTubeCrawler() {
         this.initialized = false;
+        this.httpClient = HttpClient.newHttpClient();
         this.sentimentAnalyzer = new EnhancedSentimentAnalyzer();
     }
 
@@ -36,88 +55,30 @@ public class YouTubeCrawler implements DataCrawler {
     }
 
     public void initialize() {
-        try {
-            System.out.println("🚀 Initializing YouTube Crawler with Selenium...");
-
-            ChromeOptions options = new ChromeOptions();
-            options.addArguments(
-                    "--window-size=1920,1080",
-                    "--no-sandbox",
-                    "--disable-dev-shm-usage",
-                    "--disable-blink-features=AutomationControlled",
-                    "--disable-gpu",
-                    "--start-maximized",
-                    "disable-infobars",
-                    "--disable-extensions"
-            );
-            options.setExperimentalOption("excludeSwitches", Arrays.asList("enable-automation"));
-            options.setExperimentalOption("useAutomationExtension", false);
-
-            System.out.println("✓ Creating ChromeDriver...");
-            driver = new ChromeDriver(options);
-            wait = new WebDriverWait(driver, Duration.ofSeconds(15));
-
-            initialized = true;
-            System.out.println("✅ YouTube Crawler initialized successfully");
-
-        } catch (Exception e) {
-            System.err.println("❌ Error initializing: " + e.getMessage());
-            e.printStackTrace();
-            initialized = false;
-            if (driver != null) driver.quit();
-        }
-    }
-
-    public void initializeBrowserOnly() {
-        try {
-            System.out.println("🚀 Initializing browser...");
-
-            ChromeOptions options = new ChromeOptions();
-            options.addArguments(
-                    "--window-size=1920,1080",
-                    "--no-sandbox",
-                    "--disable-dev-shm-usage",
-                    "--disable-blink-features=AutomationControlled",
-                    "--disable-gpu",
-                    "--start-maximized",
-                    "disable-infobars",
-                    "--disable-extensions"
-            );
-            options.setExperimentalOption("excludeSwitches", Arrays.asList("enable-automation"));
-            options.setExperimentalOption("useAutomationExtension", false);
-
-            System.out.println("✓ Creating ChromeDriver...");
-            driver = new ChromeDriver(options);
-            wait = new WebDriverWait(driver, Duration.ofSeconds(15));
-
-            initialized = true;
-            System.out.println("✅ Browser initialized successfully");
-
-        } catch (Exception e) {
-            System.err.println("❌ Error initializing: " + e.getMessage());
-            e.printStackTrace();
-            initialized = false;
-            if (driver != null) driver.quit();
-        }
+        System.out.println("🚀 Initializing YouTube Crawler (HTTP API)...");
+        initialized = true;
+        System.out.println("✓ YouTube Crawler initialized (HTTP mode)");
     }
 
     @Override
     public List<Post> crawlPosts(List<String> keywords, List<String> hashtags, int limit) {
-        // For YouTube, combine all hashtags and keywords into single search
         List<Post> allPosts = new ArrayList<>();
         
         List<String> searchTerms = new ArrayList<>();
         if (keywords != null) searchTerms.addAll(keywords);
-        if (hashtags != null) searchTerms.addAll(hashtags);
+        if (hashtags != null) {
+            for (String tag : hashtags) {
+                searchTerms.add(tag.startsWith("#") ? tag.substring(1) : tag);
+            }
+        }
         
         if (searchTerms.isEmpty()) {
             System.err.println("No search terms provided");
             return allPosts;
         }
         
-        // Search for each term
         for (String term : searchTerms) {
-            List<Post> results = crawl(term, limit, 50);
+            List<Post> results = crawlByKeyword(term, limit);
             allPosts.addAll(results);
             
             if (allPosts.size() >= limit) break;
@@ -126,325 +87,377 @@ public class YouTubeCrawler implements DataCrawler {
         return allPosts;
     }
 
-    private List<Post> crawl(String input, int postLimit, int commentLimit) {
+    /**
+     * Crawl YouTube videos by keyword - simplified for now
+     */
+    private List<Post> crawlByKeyword(String keyword, int limit) {
         List<Post> posts = new ArrayList<>();
         
         if (!initialized) {
-            System.err.println("❌ Crawler not initialized");
+            System.err.println("Crawler not initialized");
             return posts;
         }
-
-        // Normalize input - treat as keyword/hashtag
-        String keyword = input.trim().toLowerCase();
         
-        // Remove # if present
-        if (keyword.startsWith("#")) {
-            keyword = keyword.substring(1);
-        }
-
-        System.out.println("\n🎬 Starting YouTube crawl for keyword: " + keyword);
-        
-        // Build search URL
-        String searchUrl = "https://www.youtube.com/results?search_query=" + keyword.replace(" ", "+");
-        
-        crawlFromUrl(searchUrl, postLimit, posts);
+        System.out.println("\n🎬 Crawling YouTube for keyword: " + keyword);
+        // TODO: Implement video search
         
         return posts;
     }
 
     /**
-     * Crawl from search results page - click videos and extract comments
-     */
-    private void crawlFromUrl(String url, int limit, List<Post> posts) {
-        try {
-            System.out.println("🌐 Navigating to: " + url);
-            driver.get(url);
-            Thread.sleep(4000);
-
-            // Wait for search results to load
-            wait.until(ExpectedConditions.presenceOfElementLocated(By.id("contents")));
-            System.out.println("✓ Search results loaded");
-
-            Set<String> collectedVideoUrls = new HashSet<>();
-            
-            int scrolls = 0;
-            int maxScrolls = (limit / 4) + 10;
-
-            System.out.println("\n📍 Phase 1: Scroll search results to collect video links...");
-            
-            // Scroll through search results and collect video URLs
-            while (collectedVideoUrls.size() < limit && scrolls < maxScrolls) {
-                scrollDown();
-                Thread.sleep(SCROLL_PAUSE + new Random().nextInt(1000));
-                
-                // Collect video URLs
-                collectVideoUrlsFromSearchResults(collectedVideoUrls, limit);
-                scrolls++;
-            }
-
-            System.out.println("\n📍 Phase 2: Visit each video to extract comments...");
-            System.out.println("📋 Total videos collected: " + collectedVideoUrls.size());
-
-            // Now visit each video URL to extract posts and comments
-            int processedCount = 0;
-            for (String videoUrl : collectedVideoUrls) {
-                if (posts.size() >= limit) break;
-                
-                try {
-                    System.out.println("\n  [" + (processedCount + 1) + "/" + collectedVideoUrls.size() + "] " +
-                        "Processing video: " + videoUrl.substring(0, Math.min(80, videoUrl.length())));
-                    
-                    // Navigate to video
-                    driver.get(videoUrl);
-                    Thread.sleep(3000);
-
-                    // Wait for video to load
-                    wait.until(ExpectedConditions.presenceOfElementLocated(By.id("title")));
-
-                    // Extract video as post
-                    String videoId = extractVideoId(videoUrl);
-                    String videoTitle = extractVideoTitle();
-                    YouTubePost post = new YouTubePost(videoId, videoTitle, LocalDateTime.now(), "YouTube User", videoUrl);
-
-                    System.out.println("  ✓ Video: " + videoTitle);
-
-                    // Extract comments
-                    System.out.println("  💬 Extracting comments...");
-                    extractCommentsFromVideoPage(post);
-
-                    System.out.println("  ✅ Extracted " + post.getComments().size() + " comments");
-
-                    posts.add(post);
-                    processedCount++;
-
-                } catch (Exception e) {
-                    System.err.println("  ❌ Error processing video: " + e.getMessage());
-                }
-            }
-
-            System.out.println("\n✅ Crawl complete!");
-            System.out.println("📊 Total videos crawled: " + posts.size());
-            System.out.println("💬 Total comments extracted: " + 
-                posts.stream().mapToInt(p -> p.getComments().size()).sum());
-
-        } catch (Exception e) {
-            System.err.println("❌ Error during crawl: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Collect video URLs from search results page
-     */
-    private void collectVideoUrlsFromSearchResults(Set<String> urls, int limit) {
-        try {
-            List<WebElement> videoElements = driver.findElements(
-                By.cssSelector("a#video-title")
-            );
-
-            for (WebElement videoElement : videoElements) {
-                if (urls.size() >= limit) break;
-                
-                try {
-                    String href = videoElement.getAttribute("href");
-                    if (href != null && href.contains("/watch?")) {
-                        String fullUrl = href.startsWith("http") ? href : "https://www.youtube.com" + href;
-                        urls.add(fullUrl);
-                    }
-                } catch (Exception e) {
-                    // Skip this element
-                }
-            }
-        } catch (Exception e) {
-            // No videos found on this scroll
-        }
-    }
-
-    /**
-     * Extract comments from video page
-     */
-    private void extractCommentsFromVideoPage(YouTubePost post) {
-        try {
-            // Scroll down to load comments
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            
-            // Scroll to comments section
-            for (int i = 0; i < 3; i++) {
-                js.executeScript("window.scrollBy(0, 500);");
-                Thread.sleep(1000);
-            }
-
-            int commentCount = 0;
-            
-            // Try multiple selectors for comment elements (YouTube changes structure frequently)
-            List<WebElement> commentElements = new ArrayList<>();
-            try {
-                // Try newer YouTube comment selector
-                commentElements = driver.findElements(By.cssSelector("div#content-text"));
-            } catch (Exception e1) {
-                try {
-                    // Fallback: Try finding comment elements by class
-                    commentElements = driver.findElements(By.xpath("//yt-formatted-string[@id='content-text']"));
-                } catch (Exception e2) {
-                    try {
-                        // Another fallback: Look for comment text divs
-                        commentElements = driver.findElements(By.cssSelector("div[id='content-text']"));
-                    } catch (Exception e3) {
-                        System.out.println("    ⚠️ Could not find comment elements with any selector");
-                        // If we can't find comments, that's OK - still add the video
-                    }
-                }
-            }
-
-            // Extract comments if found
-            for (WebElement commentElement : commentElements) {
-                if (commentCount >= 50) break; // Limit comments per video
-                
-                try {
-                    String commentText = commentElement.getText();
-                    if (commentText != null && !commentText.trim().isEmpty() && !commentText.contains("Login")) {
-                        String commentId = "YT_" + post.getPostId() + "_" + commentCount;
-                        Comment comment = new Comment(
-                            commentId,
-                            post.getPostId(),
-                            commentText,
-                            LocalDateTime.now().minusHours(new Random().nextInt(168)),
-                            "YouTube User"
-                        );
-
-                        // Analyze sentiment
-                        sentimentAnalyzer.initialize();
-                        Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(commentText);
-                        comment.setSentiment(sentiment);
-
-                        post.addComment(comment);
-                        commentCount++;
-                    }
-                } catch (Exception e) {
-                    // Skip this comment and continue
-                }
-            }
-
-            System.out.println("    Extracted " + commentCount + " comments");
-
-        } catch (Exception e) {
-            System.err.println("    ⚠️ Warning extracting comments: " + e.getMessage());
-            // Don't fail - video extraction is still valid even without comments
-        }
-    }
-
-    /**
-     * Extract video ID from URL
-     */
-    private String extractVideoId(String url) {
-        try {
-            if (url.contains("v=")) {
-                return "YT_" + url.split("v=")[1].split("&")[0];
-            }
-        } catch (Exception e) {
-            // Fallback
-        }
-        return "YT_" + url.hashCode();
-    }
-
-    /**
-     * Extract video title from page
-     */
-    private String extractVideoTitle() {
-        try {
-            WebElement titleElement = driver.findElement(By.id("title"));
-            return titleElement.getText();
-        } catch (Exception e) {
-            return "YouTube Video";
-        }
-    }
-
-    /**
-     * Crawl single video by URL
+     * Crawl single video by URL - main entry point
+     * Implements: get_comments_from_url from Python
      */
     public YouTubePost crawlVideoByUrl(String videoUrl) {
-        YouTubeCrawler tempCrawler = null;
         try {
             System.out.println("\n🔗 Crawling single video from URL");
             System.out.println("📍 URL: " + videoUrl);
             
-            // Validate URL
             if (!videoUrl.contains("youtube.com")) {
-                System.err.println("❌ Invalid URL: Must be a YouTube URL");
+                System.err.println("Invalid URL: Must be a YouTube URL");
                 return null;
             }
-
-            System.out.println("🚀 Initializing browser...");
-            tempCrawler = new YouTubeCrawler();
-            tempCrawler.initializeBrowserOnly();
-
-            if (!tempCrawler.isInitialized()) {
-                System.err.println("❌ Failed to initialize browser");
+            
+            // Extract video ID from URL
+            String videoId = extractVideoIdFromUrl(videoUrl);
+            if (videoId == null || videoId.isEmpty()) {
+                System.err.println("Could not extract video ID from URL");
                 return null;
             }
-
-            System.out.println("✓ Browser ready");
-
-            // Navigate to video
-            System.out.println("📍 Navigating to video...");
-            tempCrawler.driver.get(videoUrl);
-            Thread.sleep(3000);
-
-            String currentUrl = tempCrawler.driver.getCurrentUrl();
-            System.out.println("  Current URL: " + currentUrl);
-
-            // Extract video info
-            String videoId = tempCrawler.extractVideoId(videoUrl);
-            String videoTitle = tempCrawler.extractVideoTitle();
-
-            YouTubePost post = new YouTubePost(videoId, videoTitle, LocalDateTime.now(), "YouTube User", videoUrl);
-
-            System.out.println("📝 Video title extracted: " + videoTitle);
-
-            // Extract comments
-            System.out.println("💬 Extracting comments from video...");
-            tempCrawler.extractCommentsFromVideoPage(post);
-
+            
+            System.out.println("📝 Video ID: " + videoId);
+            
+            // Fetch the video page HTML
+            System.out.println("⏳ Fetching video page...");
+            String html = fetchPageContent(videoUrl);
+            
+            // Step 1: Extract ytcfg using regex_search (group 1 = the JSON)
+            String ytcfgJson = regexSearch(html, YT_CFG_RE, 1, "");
+            if (ytcfgJson.isEmpty()) {
+                System.err.println("❌ Failed to extract ytcfg - regex didn't match");
+                System.err.println("📄 HTML length: " + html.length() + " chars");
+                // Debug: check if ytcfg.set is present
+                if (html.contains("ytcfg.set")) {
+                    System.err.println("⚠️ Found 'ytcfg.set' in HTML but regex didn't match");
+                }
+                return null;
+            }
+            
+            System.out.println("✓ Extracted ytcfg (" + ytcfgJson.length() + " chars)");
+            JSONObject ytcfg = new JSONObject(ytcfgJson);
+            
+            // Step 2: Extract ytInitialData using regex_search (group 1 = the JSON)
+            String ytInitialDataJson = regexSearch(html, YT_INITIAL_DATA_RE, 1, "");
+            if (ytInitialDataJson.isEmpty()) {
+                System.err.println("❌ Failed to extract ytInitialData - regex didn't match");
+                // Debug: check if ytInitialData is present
+                if (html.contains("ytInitialData")) {
+                    System.err.println("⚠️ Found 'ytInitialData' in HTML but regex didn't match");
+                }
+                return null;
+            }
+            
+            System.out.println("✓ Extracted ytInitialData (" + ytInitialDataJson.length() + " chars)");
+            JSONObject data = new JSONObject(ytInitialDataJson);
+            
+            // Extract video title
+            String title = extractVideoTitle(html);
+            if (title == null || title.isEmpty()) {
+                title = "Video: " + videoId;
+            }
+            
+            YouTubePost post = new YouTubePost(videoId, title, LocalDateTime.now(), "YouTube User", videoUrl);
+            
+            // Step 3: Extract comments from the initial data
+            // Look for itemSectionRenderer -> continuationItemRenderer
+            System.out.println("💬 Extracting comments...");
+            extractCommentsFromInitialData(post, data, ytcfg);
+            
             System.out.println("✅ Successfully extracted video with " + post.getComments().size() + " comments");
             return post;
-
+            
         } catch (Exception e) {
             System.err.println("❌ Error crawling video by URL: " + e.getMessage());
             e.printStackTrace();
             return null;
-        } finally {
-            if (tempCrawler != null) {
-                try {
-                    tempCrawler.shutdown();
-                } catch (Exception e) {
-                    System.err.println("Error shutting down temporary crawler: " + e.getMessage());
-                }
-            }
         }
     }
 
-    private void scrollDown() {
-        JavascriptExecutor js = (JavascriptExecutor) driver;
-        js.executeScript("window.scrollBy(0, 800);");
+    /**
+     * Extract comments from ytInitialData
+     * Equivalent to Python's get_comments_from_url logic
+     */
+    private void extractCommentsFromInitialData(YouTubePost post, JSONObject data, JSONObject ytcfg) {
+        try {
+            // Search for itemSectionRenderer
+            List<JSONObject> itemSections = searchDict(data, "itemSectionRenderer");
+            if (itemSections.isEmpty()) {
+                System.out.println("⚠️ No itemSectionRenderer found");
+                return;
+            }
+            
+            JSONObject itemSection = itemSections.get(0);
+            
+            // Search for continuationItemRenderer in itemSection
+            List<JSONObject> continuations = searchDict(itemSection, "continuationItemRenderer");
+            if (continuations.isEmpty()) {
+                System.out.println("⚠️ No continuationItemRenderer found - comments may be disabled");
+                return;
+            }
+            
+            // Extract the continuation endpoint
+            JSONObject continuationRenderer = continuations.get(0);
+            List<JSONObject> continuationEndpoints = searchDict(continuationRenderer, "continuationEndpoint");
+            
+            if (!continuationEndpoints.isEmpty()) {
+                try {
+                    JSONObject continuationEndpoint = continuationEndpoints.get(0);
+                    JSONObject continuationCommand = continuationEndpoint.getJSONObject("continuationCommand");
+                    String continuationToken = continuationCommand.getString("token");
+                    
+                    System.out.println("📌 Found continuation token, fetching comments...");
+                    
+                    // Build the AJAX request following Python's ajax_request
+                    fetchCommentsWithContinuation(post, continuationToken, ytcfg);
+                } catch (JSONException e) {
+                    System.out.println("⚠️ Could not extract continuation token: " + e.getMessage());
+                }
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Error extracting comments from initial data: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Fetch comments using continuation token via AJAX API
+     * Equivalent to Python's ajax_request
+     */
+    private void fetchCommentsWithContinuation(YouTubePost post, String continuationToken, JSONObject ytcfg) {
+        try {
+            // Construct the API URL and request body like Python does
+            String apiUrl = "https://www.youtube.com/youtubei/v1/next";
+            String apiKey = ytcfg.getString("INNERTUBE_API_KEY");
+            JSONObject context = ytcfg.getJSONObject("INNERTUBE_CONTEXT");
+            
+            // Build request body
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("context", context);
+            requestBody.put("continuation", continuationToken);
+            
+            System.out.println("🔄 Making AJAX request to: " + apiUrl);
+            
+            // Make the HTTP POST request
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(java.net.URI.create(apiUrl + "?key=" + apiKey))
+                .header("Content-Type", "application/json")
+                .header("User-Agent", USER_AGENT)
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
+                .timeout(java.time.Duration.ofSeconds(60))
+                .build();
+            
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            
+            if (response.statusCode() == 200) {
+                JSONObject responseData = new JSONObject(response.body());
+                extractCommentsFromResponse(post, responseData);
+            } else if (response.statusCode() == 403 || response.statusCode() == 413) {
+                System.out.println("⚠️ API rate limited (status " + response.statusCode() + ")");
+            } else {
+                System.err.println("⚠️ AJAX request failed with status " + response.statusCode());
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Error fetching comments with continuation: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Extract comments from AJAX response
+     */
+    private void extractCommentsFromResponse(YouTubePost post, JSONObject response) {
+        try {
+            // Search for commentEntityPayload in the response
+            List<JSONObject> commentPayloads = searchDict(response, "commentEntityPayload");
+            
+            System.out.println("Found " + commentPayloads.size() + " comments in response");
+            
+            for (JSONObject payload : commentPayloads) {
+                try {
+                    JSONObject properties = payload.getJSONObject("properties");
+                    JSONObject author = payload.getJSONObject("author");
+                    
+                    String commentId = properties.getString("commentId");
+                    String content = properties.getJSONObject("content").getString("content");
+                    String authorName = author.getString("displayName");
+                    
+                    Comment comment = new Comment(
+                        commentId,
+                        post.getPostId(),
+                        content,
+                        LocalDateTime.now(),
+                        authorName
+                    );
+                    
+                    // Set sentiment if analyzer available
+                    if (sentimentAnalyzer != null) {
+                        Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(content);
+                        comment.setSentiment(sentiment);
+                    }
+                    
+                    post.addComment(comment);
+                    
+                } catch (JSONException e) {
+                    // Skip malformed comments
+                }
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Error extracting comments from response: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Fetch page content using HTTP GET
+     */
+    private String fetchPageContent(String url) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(java.net.URI.create(url))
+            .header("User-Agent", USER_AGENT)
+            .timeout(java.time.Duration.ofSeconds(30))
+            .GET()
+            .build();
+        
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        if (response.statusCode() == 200) {
+            return response.body();
+        }
+        
+        throw new Exception("Failed to fetch page: HTTP " + response.statusCode());
+    }
+
+    /**
+     * Regex search - equivalent to Python's regex_search method
+     * Returns group(groupNum) if match found, else default
+     */
+    private static String regexSearch(String text, Pattern pattern, int group, String defaultValue) {
+        try {
+            Matcher matcher = pattern.matcher(text);
+            if (matcher.find()) {
+                return matcher.group(group);
+            }
+        } catch (Exception e) {
+            System.err.println("Regex search error: " + e.getMessage());
+        }
+        return defaultValue;
+    }
+
+    /**
+     * Recursive search for key in JSON object - equivalent to Python's search_dict
+     * Uses stack-based approach (not true recursion) to avoid stack overflow
+     * 
+     * Python code:
+     * @staticmethod
+     * def search_dict(partial, search_key):
+     *     stack = [partial]
+     *     while stack:
+     *         current_item = stack.pop()
+     *         if isinstance(current_item, dict):
+     *             for key, value in current_item.items():
+     *                 if key == search_key:
+     *                     yield value
+     *                 else:
+     *                     stack.append(value)
+     *         elif isinstance(current_item, list):
+     *             stack.extend(current_item)
+     */
+    private static List<JSONObject> searchDict(Object partial, String searchKey) {
+        List<JSONObject> results = new ArrayList<>();
+        Stack<Object> stack = new Stack<>();
+        
+        if (partial != null) {
+            stack.push(partial);
+        }
+        
+        while (!stack.isEmpty()) {
+            Object currentItem = stack.pop();
+            
+            if (currentItem instanceof JSONObject) {
+                JSONObject jsonObj = (JSONObject) currentItem;
+                Iterator<String> keys = jsonObj.keys();
+                
+                while (keys.hasNext()) {
+                    String key = keys.next();
+                    Object value = jsonObj.opt(key);
+                    
+                    if (key.equals(searchKey)) {
+                        // Found a matching key
+                        if (value instanceof JSONObject) {
+                            results.add((JSONObject) value);
+                        }
+                    } else if (value != null) {
+                        // Push to stack to continue searching
+                        stack.push(value);
+                    }
+                }
+            } else if (currentItem instanceof JSONArray) {
+                JSONArray jsonArray = (JSONArray) currentItem;
+                
+                // Add all array items to stack (in reverse order to maintain order)
+                for (int i = jsonArray.length() - 1; i >= 0; i--) {
+                    Object item = jsonArray.opt(i);
+                    if (item != null) {
+                        stack.push(item);
+                    }
+                }
+            }
+        }
+        
+        return results;
+    }
+
+    /**
+     * Extract video ID from YouTube URL
+     */
+    private String extractVideoIdFromUrl(String url) {
+        Pattern pattern = Pattern.compile("(?:youtube\\.com/watch\\?v=|youtu\\.be/)([A-Za-z0-9_\\-]+)");
+        Matcher matcher = pattern.matcher(url);
+        return matcher.find() ? matcher.group(1) : null;
+    }
+
+    /**
+     * Extract video title from page HTML
+     */
+    private String extractVideoTitle(String html) {
+        try {
+            // Try to extract from meta og:title tag
+            Pattern metaPattern = Pattern.compile("<meta\\s+property=[\"']og:title[\"']\\s+content=[\"']([^\"']+)[\"']");
+            Matcher matcher = metaPattern.matcher(html);
+            if (matcher.find()) {
+                return matcher.group(1).trim();
+            }
+            
+            // Fallback: extract from meta title tag
+            metaPattern = Pattern.compile("<meta\\s+name=[\"']title[\"']\\s+content=[\"']([^\"']+)[\"']");
+            matcher = metaPattern.matcher(html);
+            if (matcher.find()) {
+                return matcher.group(1).trim();
+            }
+        } catch (Exception e) {
+            System.err.println("Error extracting title: " + e.getMessage());
+        }
+        return null;
     }
 
     @Override
     public String getCrawlerName() {
-        return "YouTubeCrawler (Keyword + URL)";
+        return "YouTubeCrawler (HTTP API)";
     }
 
     @Override
     public void shutdown() {
-        if (driver != null) {
-            try {
-                driver.quit();
-                System.out.println("YouTubeCrawler shutdown complete");
-            } catch (Exception e) {
-                System.err.println("Error shutting down driver: " + e.getMessage());
-            } finally {
-                driver = null;
-                initialized = false;
-            }
-        }
+        System.out.println("YouTube Crawler shutdown");
+        initialized = false;
     }
 }

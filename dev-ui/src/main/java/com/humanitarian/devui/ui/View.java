@@ -8,15 +8,15 @@ import java.util.List;
 
 /**
  * View component of MVC pattern - Main GUI with comprehensive tabbed interface.
- * Dev mode: Crawler Control, Data Entry, Comment Management with Save/Cancel system.
+ * Dev mode: Data Entry, Comment Management with Save/Cancel system.
  */
 public class View extends JFrame implements ModelListener {
     private Model model;
     private SessionDataBuffer dataBuffer;
     private JTabbedPane mainTabbedPane;
-    private CrawlControlPanel crawlPanel;
     private DataCollectionPanel dataCollectionPanel;
     private CommentManagementPanel commentPanel;
+    private CrawlControlPanel crawlPanel;
     private JLabel statusLabel;
     private JButton saveButton;
     private JButton cancelButton;
@@ -56,15 +56,15 @@ public class View extends JFrame implements ModelListener {
         mainTabbedPane = new JTabbedPane();
         mainTabbedPane.setFont(new Font("Arial", Font.BOLD, 12));
 
-        // Tab 1: Web Crawler Control
+        // Tab 0: Web Crawler
         crawlPanel = new CrawlControlPanel(model, dataBuffer);
-        mainTabbedPane.addTab("🌐 Web Crawler", crawlPanel);
+        mainTabbedPane.addTab("🌐 Crawl Web", crawlPanel);
 
-        // Tab 2: Manual Data Entry
+        // Tab 1: Manual Data Entry
         dataCollectionPanel = new DataCollectionPanel(model, dataBuffer);
         mainTabbedPane.addTab("✏️  Data Entry", dataCollectionPanel);
 
-        // Tab 3: Comment Management (Excel-style)
+        // Tab 2: Comment Management (Excel-style)
         commentPanel = new CommentManagementPanel(model, dataBuffer);
         mainTabbedPane.addTab("💬 Comments Manager", commentPanel);
 
@@ -92,7 +92,7 @@ public class View extends JFrame implements ModelListener {
         titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
         titleLabel.setForeground(Color.WHITE);
 
-        JLabel subtitleLabel = new JLabel("Crawl Facebook + Check duplicates + Save to humanitarian_logistics_curated.db");
+        JLabel subtitleLabel = new JLabel("Web Crawler (Facebook/YouTube) + Manual data entry + Comment management + Save to humanitarian_logistics_curated.db");
         subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         subtitleLabel.setForeground(new Color(255, 200, 200));
 
@@ -205,7 +205,8 @@ public class View extends JFrame implements ModelListener {
                         duplicates++;
                         statusLabel.setText("⚠️ Found duplicate link, skipping: " + post.getPostId());
                     } else {
-                        dbManager.savePost((FacebookPost) post);
+                        // Support both YouTubePost and YouTubePost
+                        dbManager.savePost(post);
                         saved++;
                     }
                 }
@@ -314,16 +315,11 @@ public class View extends JFrame implements ModelListener {
             
             // Suppress any cleanup errors to prevent "Errors during cleaning null"
             try {
-                if (crawlPanel != null) {
-                    // Let crawler finish gracefully
-                }
-            } catch (Throwable t) {
-                // Silently ignore
-            }
-            
-            try {
                 if (commentPanel != null) {
                     // CommentPanel cleanup
+                }
+                if (crawlPanel != null) {
+                    // CrawlPanel cleanup
                 }
             } catch (Throwable t) {
                 // Silently ignore
