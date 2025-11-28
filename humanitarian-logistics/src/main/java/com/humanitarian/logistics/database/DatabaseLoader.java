@@ -154,17 +154,11 @@ public class DatabaseLoader {
                     rs.getString("source")
                 );
                 
-                // Set sentiment if available
-                String sentimentStr = rs.getString("sentiment");
-                if (sentimentStr != null && !sentimentStr.isEmpty()) {
-                    try {
-                        Sentiment.SentimentType sentimentType = Sentiment.SentimentType.valueOf(sentimentStr);
-                        double confidence = rs.getDouble("confidence");
-                        post.setSentiment(new Sentiment(sentimentType, confidence, post.getContent()));
-                    } catch (IllegalArgumentException e) {
-                        // Invalid sentiment type, skip
-                    }
-                }
+                // Don't load sentiment from DB - force re-analysis with Python API
+                // String sentimentStr = rs.getString("sentiment");
+                // if (sentimentStr != null && !sentimentStr.isEmpty()) {
+                //     ...
+                // }
                 
                 // Set relief category if available
                 String categoryStr = rs.getString("relief_category");
@@ -219,17 +213,11 @@ public class DatabaseLoader {
                     // Create comment
                     Comment comment = new Comment(commentId, postId, content, createdAt, author);
                     
-                    // Set sentiment if available
-                    String sentimentStr = rs.getString("sentiment");
-                    if (sentimentStr != null && !sentimentStr.isEmpty()) {
-                        try {
-                            Sentiment.SentimentType sentimentType = Sentiment.SentimentType.valueOf(sentimentStr);
-                            double confidence = rs.getDouble("confidence");
-                            comment.setSentiment(new Sentiment(sentimentType, confidence, content));
-                        } catch (IllegalArgumentException e) {
-                            // Invalid sentiment type, skip
-                        }
-                    }
+                    // Don't load sentiment from DB - force re-analysis with Python API
+                    // String sentimentStr = rs.getString("sentiment");
+                    // if (sentimentStr != null && !sentimentStr.isEmpty()) {
+                    //     ...
+                    // }
                     
                     // Set relief category if available
                     String categoryStr = rs.getString("relief_category");

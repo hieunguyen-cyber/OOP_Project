@@ -3,7 +3,7 @@ package com.humanitarian.devui.crawler;
 import com.humanitarian.devui.model.*;
 import com.humanitarian.devui.sentiment.EnhancedSentimentAnalyzer;
 import com.humanitarian.devui.sentiment.SentimentAnalyzer;
-import com.humanitarian.devui.preprocessor.ReliefItemClassifier;
+import com.humanitarian.devui.sentiment.PythonCategoryClassifier;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -15,20 +15,20 @@ import java.util.*;
  * - Category-specific content for each relief type
  * - Temporal distribution with time-based sentiment evolution
  * - Realistic sentiment patterns per category
- * - Comments with ACTUAL sentiment analysis and category classification
+ * - Comments with ACTUAL sentiment analysis and category classification (ML-based)
  */
 public class MockDataCrawler implements DataCrawler {
     private final boolean initialized;
     private final Random random;
     private final SentimentAnalyzer sentimentAnalyzer;
-    private final ReliefItemClassifier reliefClassifier;
+    private final PythonCategoryClassifier categoryClassifier;
 
     public MockDataCrawler() {
         this.initialized = true;
         this.random = new Random();
         this.sentimentAnalyzer = new EnhancedSentimentAnalyzer();
         this.sentimentAnalyzer.initialize();
-        this.reliefClassifier = new ReliefItemClassifier();
+        this.categoryClassifier = new PythonCategoryClassifier();
     }
 
     @Override
@@ -349,13 +349,13 @@ public class MockDataCrawler implements DataCrawler {
             Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(commentText);
             comment.setSentiment(sentiment);
             
-            // ✅ CLASSIFY CATEGORY using ReliefItemClassifier
-            ReliefItem.Category classifiedCategory = reliefClassifier.classifyText(commentText);
+            // ✅ CLASSIFY CATEGORY using ML model (facebook/bart-large-mnli)
+            ReliefItem.Category classifiedCategory = categoryClassifier.classifyText(commentText);
             if (classifiedCategory != null) {
-                comment.setReliefItem(new ReliefItem(classifiedCategory, "Auto-classified from comment", 3));
+                comment.setReliefItem(new ReliefItem(classifiedCategory, "ML-classified (facebook/bart-large-mnli)", 3));
             } else {
-                // Fallback to parent post's category if no match found
-                comment.setReliefItem(new ReliefItem(category, "From parent post category", 2));
+                // Fallback to parent post's category if API not available
+                comment.setReliefItem(new ReliefItem(category, "From parent post category (API fallback)", 2));
             }
             
             post.addComment(comment);

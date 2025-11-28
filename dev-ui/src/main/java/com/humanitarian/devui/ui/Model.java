@@ -2,7 +2,7 @@ package com.humanitarian.devui.ui;
 
 import com.humanitarian.devui.model.*;
 import com.humanitarian.devui.sentiment.SentimentAnalyzer;
-import com.humanitarian.devui.preprocessor.ReliefItemClassifier;
+import com.humanitarian.devui.sentiment.PythonCategoryClassifier;
 import com.humanitarian.devui.database.DatabaseManager;
 import com.humanitarian.devui.database.DataPersistenceManager;
 import com.humanitarian.devui.analysis.*;
@@ -16,7 +16,7 @@ import java.util.*;
 public class Model {
     private List<Post> posts;
     private SentimentAnalyzer sentimentAnalyzer;
-    private ReliefItemClassifier reliefClassifier;
+    private PythonCategoryClassifier categoryClassifier;
     private DatabaseManager dbManager;
     private Map<String, AnalysisModule> analysisModules;
     private List<ModelListener> listeners;
@@ -26,7 +26,7 @@ public class Model {
         this.posts = new ArrayList<>();
         this.listeners = new ArrayList<>();
         this.analysisModules = new LinkedHashMap<>();
-        this.reliefClassifier = new ReliefItemClassifier();
+        this.categoryClassifier = new PythonCategoryClassifier();
         this.dbManager = new DatabaseManager();
         this.persistenceManager = new DataPersistenceManager();
 
@@ -60,7 +60,7 @@ public class Model {
     public void addPost(Post post) {
         // Classify relief item if not already done
         if (post.getReliefItem() == null) {
-            reliefClassifier.classifyPost(post);
+            categoryClassifier.classifyPost(post);
         }
 
         // Analyze sentiment if not already done
@@ -72,7 +72,7 @@ public class Model {
         // Classify comments
         for (Comment comment : post.getComments()) {
             if (comment.getReliefItem() == null) {
-                reliefClassifier.classifyPost(new PostAdapter(comment));
+                categoryClassifier.classifyPost(new PostAdapter(comment));
             }
             if (comment.getSentiment() == null && sentimentAnalyzer != null) {
                 Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(comment.getContent());
@@ -156,7 +156,10 @@ public class Model {
     public void loadPersistedData() {
         List<Post> loadedPosts = persistenceManager.loadPosts();
         if (loadedPosts != null && !loadedPosts.isEmpty()) {
-            this.posts = new ArrayList<>(loadedPosts);
+            // Add each post through addPost() to ensure classification is called
+            for (Post post : loadedPosts) {
+                addPost(post);
+            }
             notifyListeners();
         }
     }
@@ -177,21 +180,23 @@ public class Model {
 
     /**
      * Batch analyze all posts through both classification models.
-     * Runs all posts through ReliefItemClassifier and SentimentAnalyzer,
+     * Runs all posts through PythonCategoryClassifier and SentimentAnalyzer,
      * then updates database with new classifications.
      * 
      * @return number of posts analyzed
      */
     public int analyzeAllPosts() {
         System.out.println("Starting batch analysis of " + posts.size() + " posts...");
+        System.out.println("✓ Category Classification: Keyword-based (Instant Vietnamese)");
+        System.out.println("✓ Sentiment Analysis: xlm-roberta-large-xnli (Vietnamese + 100+ languages)");
         int analyzed = 0;
 
         for (Post post : posts) {
             try {
-                // 1. Classify relief category
-                reliefClassifier.classifyPost(post);
+                // 1. Classify relief category using keyword-based approach
+                categoryClassifier.classifyPost(post);
 
-                // 2. Analyze sentiment
+                // 2. Analyze sentiment using transformer model
                 if (sentimentAnalyzer != null) {
                     Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(post.getContent());
                     post.setSentiment(sentiment);
@@ -199,7 +204,7 @@ public class Model {
 
                 // 3. Analyze comments in the post
                 for (Comment comment : post.getComments()) {
-                    reliefClassifier.classifyPost(new PostAdapter(comment));
+                    categoryClassifier.classifyPost(new PostAdapter(comment));
                     if (sentimentAnalyzer != null) {
                         Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(comment.getContent());
                         comment.setSentiment(sentiment);

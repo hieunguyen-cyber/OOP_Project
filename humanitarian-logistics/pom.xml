@@ -38,6 +38,13 @@
             <version>${json.version}</version>
         </dependency>
 
+        <!-- Gson for JSON parsing -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency>
+
         <!-- HTTP Client for API calls -->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>

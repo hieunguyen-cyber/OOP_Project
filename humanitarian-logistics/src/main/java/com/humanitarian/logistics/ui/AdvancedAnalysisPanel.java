@@ -30,6 +30,19 @@ public class AdvancedAnalysisPanel extends JPanel {
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createTitledBorder("Advanced Analysis System"));
 
+        // Top panel with Analyze All Posts button
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton analyzeAllButton = new JButton("🔍 Analyze All Posts with Python API");
+        analyzeAllButton.setFont(new Font("Arial", Font.BOLD, 13));
+        analyzeAllButton.setBackground(new Color(3, 155, 229)); // Blue
+        analyzeAllButton.setForeground(Color.WHITE);
+        analyzeAllButton.setOpaque(true);
+        analyzeAllButton.setBorderPainted(false);
+        analyzeAllButton.addActionListener(e -> analyzeAllPostsAction());
+        topPanel.add(analyzeAllButton);
+        topPanel.add(new JLabel(" ← Click to send all posts to Python API for sentiment analysis"));
+        add(topPanel, BorderLayout.NORTH);
+
         mainTabs = new JTabbedPane();
         mainTabs.addTab("📊 Problem 1: Satisfaction", createProblem1Tab());
         mainTabs.addTab("📈 Problem 2: Temporal", createProblem2Tab());
@@ -811,5 +824,30 @@ public class AdvancedAnalysisPanel extends JPanel {
 
     private String truncate(String s, int len) {
         return s.length() <= len ? s : s.substring(0, len) + "...";
+    }
+
+    private void analyzeAllPostsAction() {
+        try {
+            int analyzedCount = model.analyzeAllPosts();
+            JOptionPane.showMessageDialog(
+                this,
+                "✓ Sentiment analysis complete!\n\n" +
+                "Analyzed: " + analyzedCount + " posts via Python API\n\n" +
+                "Sentiments updated in memory and saved to database.\n" +
+                "Click 'Problem 1' or 'Problem 2' to view analysis.",
+                "Analysis Complete",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+            // Refresh tabs to show updated sentiments
+            mainTabs.repaint();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Error during analysis:\n" + e.getMessage() + "\n\n" +
+                "Make sure Python API is running: python sentiment_api.py",
+                "Analysis Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
     }
 }

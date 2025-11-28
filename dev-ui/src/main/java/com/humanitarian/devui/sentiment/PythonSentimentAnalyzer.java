@@ -47,7 +47,9 @@ public class PythonSentimentAnalyzer implements SentimentAnalyzer {
             HttpPost post = new HttpPost(apiUrl + "/analyze");
             JSONObject requestBody = new JSONObject();
             requestBody.put("text", text);
-            post.setEntity(new StringEntity(requestBody.toString()));
+            StringEntity entity = new StringEntity(requestBody.toString(), "UTF-8");
+            entity.setContentType("application/json; charset=UTF-8");
+            post.setEntity(entity);
             post.setHeader("Content-Type", "application/json");
 
             try (CloseableHttpResponse response = httpClient.execute(post)) {
@@ -59,16 +61,39 @@ public class PythonSentimentAnalyzer implements SentimentAnalyzer {
                 while ((line = reader.readLine()) != null) {
                     result.append(line);
                 }
+                reader.close();
 
-                JSONObject responseJson = new JSONObject(result.toString());
+                String responseText = result.toString();
+                if (responseText.isEmpty()) {
+                    System.err.println("✗ Error analyzing sentiment: Empty response from API");
+                    return new Sentiment(Sentiment.SentimentType.NEUTRAL, 0.5, text);
+                }
+
+                JSONObject responseJson = new JSONObject(responseText);
+                
+                // Check for error in response
+                if (responseJson.has("error")) {
+                    System.err.println("✗ Error analyzing sentiment: " + responseJson.getString("error"));
+                    return new Sentiment(Sentiment.SentimentType.NEUTRAL, 0.5, text);
+                }
+
+                // Check if sentiment field exists
+                if (!responseJson.has("sentiment")) {
+                    System.err.println("✗ Error analyzing sentiment: Response missing 'sentiment' field");
+                    System.err.println("  Response: " + responseText);
+                    return new Sentiment(Sentiment.SentimentType.NEUTRAL, 0.5, text);
+                }
+
                 String sentiment = responseJson.getString("sentiment");
-                double confidence = responseJson.getDouble("confidence");
+                double confidence = responseJson.has("confidence") ? responseJson.getDouble("confidence") : 0.5;
 
                 Sentiment.SentimentType type = Sentiment.SentimentType.valueOf(sentiment.toUpperCase());
+                System.out.println("✓ Sentiment analyzed: " + sentiment + " (confidence: " + String.format("%.2f%%", confidence * 100) + ")");
                 return new Sentiment(type, confidence, text);
             }
         } catch (Exception e) {
-            System.err.println("Error analyzing sentiment: " + e.getMessage());
+            System.err.println("✗ Error analyzing sentiment: " + e.getMessage());
+            e.printStackTrace();
             // Return neutral sentiment on error
             return new Sentiment(Sentiment.SentimentType.NEUTRAL, 0.5, text);
         }
