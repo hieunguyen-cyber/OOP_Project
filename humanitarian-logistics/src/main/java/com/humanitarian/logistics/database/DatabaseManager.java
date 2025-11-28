@@ -10,12 +10,29 @@ import java.io.File;
  * Demonstrates abstraction and encapsulation of database operations.
  */
 public class DatabaseManager {
+    private static DatabaseManager instance;
+    private static final Object lock = new Object();
+    
     private String dbUrl;
     private Connection connection;
     private boolean initialized = false;
 
     public DatabaseManager() {
         // Lazy initialization - only connect when needed
+    }
+    
+    /**
+     * Get singleton instance to avoid multiple connections
+     */
+    public static DatabaseManager getInstance() {
+        if (instance == null) {
+            synchronized (lock) {
+                if (instance == null) {
+                    instance = new DatabaseManager();
+                }
+            }
+        }
+        return instance;
     }
 
     private String getDbUrl() {
@@ -55,27 +72,34 @@ public class DatabaseManager {
     }
 
     private void ensureConnection() throws ClassNotFoundException, SQLException {
-        if (!initialized) {
-            Class.forName("org.sqlite.JDBC");
-            dbUrl = getDbUrl();
-            
-            // Close any previous connection
-            if (connection != null && !connection.isClosed()) {
-                try {
-                    connection.close();
-                } catch (SQLException e) {
-                    // Ignore
+        synchronized (lock) {
+            if (!initialized) {
+                Class.forName("org.sqlite.JDBC");
+                dbUrl = getDbUrl();
+                
+                // Close any previous connection
+                if (connection != null && !connection.isClosed()) {
+                    try {
+                        connection.close();
+                    } catch (SQLException e) {
+                        // Ignore
+                    }
                 }
+                
+                // Add timeout to database URL to prevent lock issues
+                String urlWithTimeout = dbUrl + "?timeout=30000&journal_mode=WAL";
+                connection = DriverManager.getConnection(urlWithTimeout);
+                
+                // Enable foreign keys and WAL mode
+                try (Statement stmt = connection.createStatement()) {
+                    stmt.execute("PRAGMA foreign_keys = ON");
+                    stmt.execute("PRAGMA journal_mode = WAL");
+                    stmt.execute("PRAGMA busy_timeout = 30000");
+                }
+                createTables();
+                System.out.println("Database initialized: " + dbUrl);
+                initialized = true;
             }
-            
-            connection = DriverManager.getConnection(dbUrl);
-            // Enable foreign keys
-            try (Statement stmt = connection.createStatement()) {
-                stmt.execute("PRAGMA foreign_keys = ON");
-            }
-            createTables();
-            System.out.println("Database initialized: " + dbUrl);
-            initialized = true;
         }
     }
 
