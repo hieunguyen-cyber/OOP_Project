@@ -166,7 +166,16 @@ public class YouTubeCrawler implements DataCrawler {
                 title = "Video: " + videoId;
             }
             
-            YouTubePost post = new YouTubePost(videoId, title, LocalDateTime.now(), "YouTube User", videoUrl);
+            // Extract video publish date from ytInitialData
+            LocalDateTime videoPublishDate = extractVideoPublishDate(data);
+            if (videoPublishDate == null) {
+                System.out.println("⚠️ Could not extract video publish date, using current date");
+                videoPublishDate = LocalDateTime.now();
+            } else {
+                System.out.println("📅 Video publish date: " + videoPublishDate);
+            }
+            
+            YouTubePost post = new YouTubePost(videoId, title, videoPublishDate, "YouTube User", videoUrl);
             
             // Step 3: Extract comments from the initial data
             // Look for itemSectionRenderer -> continuationItemRenderer
@@ -291,11 +300,18 @@ public class YouTubeCrawler implements DataCrawler {
                     String content = properties.getJSONObject("content").getString("content");
                     String authorName = author.getString("displayName");
                     
+                    // Extract comment creation date/time
+                    LocalDateTime commentDate = extractCommentDateTime(properties);
+                    if (commentDate == null) {
+                        // Fallback to video publish date if available
+                        commentDate = post.getCreatedAt();
+                    }
+                    
                     Comment comment = new Comment(
                         commentId,
                         post.getPostId(),
                         content,
-                        LocalDateTime.now(),
+                        commentDate,
                         authorName
                     );
                     
@@ -335,6 +351,326 @@ public class YouTubeCrawler implements DataCrawler {
         }
         
         throw new Exception("Failed to fetch page: HTTP " + response.statusCode());
+    }
+
+    /**
+     * Extract video publish date from ytInitialData
+     * YouTube embeds date info in various places - we'll search for date patterns in JSON
+     */
+    private LocalDateTime extractVideoPublishDate(JSONObject data) {
+        try {
+            String jsonStr = data.toString();
+            
+            // Pattern 1: Look for Vietnamese month format "thg XX, YYYY"
+            Pattern vietnamesePattern = Pattern.compile(
+                "\"(?:dateText|publishedTimeText|uploadDate)\"\\s*:\\s*\\{[^}]*\"simpleText\"\\s*:\\s*\"([^\"]*thg[^\"]+)\"",
+                Pattern.CASE_INSENSITIVE
+            );
+            Matcher matcher = vietnamesePattern.matcher(jsonStr);
+            
+            if (matcher.find()) {
+                String dateStr = matcher.group(1);
+                System.out.println("  📝 Found Vietnamese date in JSON: " + dateStr);
+                
+                LocalDateTime date = parseYouTubeDateString(dateStr);
+                if (date != null) {
+                    System.out.println("✓ Extracted video date: " + dateStr + " → " + date);
+                    return date;
+                }
+            }
+            
+            // Pattern 2: Look for "Jan 15, 2025" or similar date formats in JSON values
+            Pattern datePattern = Pattern.compile(
+                "\"(?:dateText|publishedTimeText|uploadDate)\"\\s*:\\s*\\{[^}]*\"simpleText\"\\s*:\\s*\"([^\"]+)\"",
+                Pattern.CASE_INSENSITIVE
+            );
+            matcher = datePattern.matcher(jsonStr);
+            
+            while (matcher.find()) {
+                String dateStr = matcher.group(1);
+                System.out.println("  📝 Found in JSON: " + dateStr);
+                
+                if (!dateStr.contains("ago") && !dateStr.contains("view")) {
+                    LocalDateTime date = parseYouTubeDateString(dateStr);
+                    if (date != null) {
+                        System.out.println("✓ Extracted video date: " + dateStr + " → " + date);
+                        return date;
+                    }
+                }
+            }
+            
+            // Pattern 3: Look for ISO date format in uploadDate fields
+            Pattern isoDatePattern = Pattern.compile("\"uploadDate\"\\s*:\\s*\"(\\d{4}-\\d{2}-\\d{2})");
+            matcher = isoDatePattern.matcher(jsonStr);
+            
+            while (matcher.find()) {
+                String dateStr = matcher.group(1);
+                System.out.println("  📝 Found ISO date: " + dateStr);
+                
+                LocalDateTime date = parseYouTubeDateString(dateStr);
+                if (date != null) {
+                    System.out.println("✓ Extracted video date: " + dateStr + " → " + date);
+                    return date;
+                }
+            }
+            
+            // Pattern 4: Search for common date formats in the entire JSON
+            Pattern commonDatePattern = Pattern.compile(
+                "thg\\s+\\d{1,2},?\\s+\\d{4}|[A-Za-z]+\\s+\\d{1,2},?\\s+\\d{4}|\\d{1,2}\\s+[A-Za-z]+\\s+\\d{4}|\\d{4}-\\d{2}-\\d{2}"
+            );
+            matcher = commonDatePattern.matcher(jsonStr);
+            
+            int count = 0;
+            while (matcher.find() && count < 5) { // Limit to first 5 matches
+                String dateStr = matcher.group(0);
+                System.out.println("  📝 Found potential date: " + dateStr);
+                count++;
+                
+                // Try to parse
+                LocalDateTime date = parseYouTubeDateString(dateStr);
+                if (date != null) {
+                    System.out.println("✓ Extracted video date: " + dateStr + " → " + date);
+                    return date;
+                }
+            }
+            
+            // Fallback: Search using the original searchDict approach
+            List<JSONObject> dateTexts = searchDict(data, "dateText");
+            System.out.println("🔍 Found " + dateTexts.size() + " dateText objects via searchDict");
+            
+            for (JSONObject dateObj : dateTexts) {
+                try {
+                    if (dateObj.has("simpleText")) {
+                        String dateStr = dateObj.getString("simpleText");
+                        System.out.println("  📝 Found dateText: " + dateStr);
+                        
+                        // Skip if it's a duration or view count format
+                        if (dateStr.contains("ago") || dateStr.contains("views") || dateStr.contains("ago")) {
+                            System.out.println("    ⏭️ Skipping (relative time or view count)");
+                            continue;
+                        }
+                        
+                        LocalDateTime date = parseYouTubeDateString(dateStr);
+                        if (date != null) {
+                            System.out.println("✓ Extracted video date: " + dateStr + " → " + date);
+                            return date;
+                        }
+                    }
+                } catch (JSONException e) {
+                    // Continue to next
+                }
+            }
+            
+            // Alternative: Search for "publishedTimeText"
+            List<JSONObject> publishedTexts = searchDict(data, "publishedTimeText");
+            System.out.println("🔍 Found " + publishedTexts.size() + " publishedTimeText objects");
+            
+            for (JSONObject pubObj : publishedTexts) {
+                try {
+                    if (pubObj.has("simpleText")) {
+                        String dateStr = pubObj.getString("simpleText");
+                        System.out.println("  📝 Found publishedTimeText: " + dateStr);
+                        
+                        LocalDateTime date = parseYouTubeDateString(dateStr);
+                        if (date != null) {
+                            System.out.println("✓ Extracted video date from publishedTimeText: " + dateStr + " → " + date);
+                            return date;
+                        }
+                    }
+                } catch (JSONException e) {
+                    // Continue
+                }
+            }
+            
+            // Fallback: search for uploadDate in JSON-LD structured data
+            List<JSONObject> uploadDates = searchDict(data, "uploadDate");
+            System.out.println("🔍 Found " + uploadDates.size() + " uploadDate objects");
+            
+            for (JSONObject uploadDateObj : uploadDates) {
+                try {
+                    String dateStr = uploadDateObj.toString();
+                    if (dateStr.length() < 100) { // Avoid long JSON objects
+                        System.out.println("  📝 Found uploadDate: " + dateStr);
+                        LocalDateTime date = parseYouTubeDateString(dateStr);
+                        if (date != null) {
+                            System.out.println("✓ Extracted video date from uploadDate: " + dateStr + " → " + date);
+                            return date;
+                        }
+                    }
+                } catch (Exception e) {
+                    // Continue
+                }
+            }
+            
+            System.out.println("⚠️ No valid date found in ytInitialData");
+            return null;
+        } catch (Exception e) {
+            System.err.println("Error extracting video publish date: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Extract comment creation date from properties
+     * YouTube API provides "createTime" or relative time like "2 days ago"
+     */
+    private LocalDateTime extractCommentDateTime(JSONObject properties) {
+        try {
+            // Try to get createTime first (Unix timestamp in seconds or milliseconds)
+            if (properties.has("createTime")) {
+                try {
+                    long timestamp = properties.getLong("createTime");
+                    // Convert to LocalDateTime (assuming seconds)
+                    if (timestamp > 0) {
+                        return java.time.Instant.ofEpochSecond(timestamp)
+                            .atZone(java.time.ZoneId.systemDefault())
+                            .toLocalDateTime();
+                    }
+                } catch (JSONException e) {
+                    // Not a long, try other formats
+                }
+            }
+            
+            // Try publishedTimeText (like "2 days ago", "1 year ago", etc)
+            if (properties.has("publishedTimeText")) {
+                try {
+                    JSONObject timeText = properties.getJSONObject("publishedTimeText");
+                    if (timeText.has("simpleText")) {
+                        String timeStr = timeText.getString("simpleText");
+                        LocalDateTime date = parseYouTubeRelativeTime(timeStr);
+                        if (date != null) {
+                            System.out.println("✓ Parsed comment time: " + timeStr);
+                            return date;
+                        }
+                    }
+                } catch (JSONException e) {
+                    // Continue
+                }
+            }
+            
+            return null;
+        } catch (Exception e) {
+            System.err.println("Error extracting comment date: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Parse YouTube date strings like "Jan 15, 2023" or "Uploaded on Dec 25, 2024"
+     */
+    private LocalDateTime parseYouTubeDateString(String dateStr) {
+        try {
+            // Remove common prefixes
+            dateStr = dateStr.replaceAll("(Uploaded on|Streamed|Started streaming|Published|Premiere)\\s*", "");
+            dateStr = dateStr.trim();
+            
+            // Handle Vietnamese month abbreviation "thg" (tháng)
+            // E.g., "thg 12, 2024" -> "Dec 1, 2024"
+            if (dateStr.toLowerCase().contains("thg")) {
+                String[] viMonths = {"", "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+                
+                java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("thg\\s+(\\d+),?\\s+(\\d{4})");
+                java.util.regex.Matcher matcher = pattern.matcher(dateStr);
+                
+                if (matcher.find()) {
+                    int month = Integer.parseInt(matcher.group(1));
+                    int year = Integer.parseInt(matcher.group(2));
+                    
+                    if (month >= 1 && month <= 12) {
+                        String englishDate = viMonths[month] + " 1, " + year; // Day 1 of the month
+                        System.out.println("  🌍 Converted Vietnamese date: " + dateStr + " → " + englishDate);
+                        dateStr = englishDate;
+                    }
+                }
+            }
+            
+            // Try various date formats
+            String[] formats = {
+                "MMM dd, yyyy",           // Jan 15, 2023
+                "MMM d, yyyy",            // Jan 5, 2023
+                "MMMM dd, yyyy",          // January 15, 2023
+                "MMMM d, yyyy",           // January 5, 2023
+                "yyyy-MM-dd",             // 2023-01-15 (ISO format)
+                "MMM dd yyyy",            // Jan 15 2023 (no comma)
+                "MMM d yyyy",             // Jan 5 2023 (no comma)
+                "MMM dd",                 // Jan 15 (no year)
+                "MMMM d"                  // January 15 (no year)
+            };
+            
+            for (String format : formats) {
+                try {
+                    java.time.format.DateTimeFormatter formatter = 
+                        java.time.format.DateTimeFormatter.ofPattern(format);
+                    
+                    // If format has no year, add current year
+                    String dateToparse = dateStr;
+                    if (!format.contains("yyyy")) {
+                        dateToparse = dateStr + ", " + java.time.Year.now().getValue();
+                    }
+                    
+                    java.time.LocalDate date = java.time.LocalDate.parse(dateToparse, formatter);
+                    return date.atStartOfDay();
+                } catch (Exception e) {
+                    // Try next format
+                }
+            }
+            
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Parse YouTube relative time strings like "2 days ago", "1 month ago", "1 year ago"
+     */
+    private LocalDateTime parseYouTubeRelativeTime(String timeStr) {
+        try {
+            timeStr = timeStr.toLowerCase().trim();
+            
+            // Parse patterns like "2 days ago", "1 month ago", etc
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("(\\d+)\\s*(second|minute|hour|day|week|month|year)s?\\s*ago");
+            java.util.regex.Matcher matcher = pattern.matcher(timeStr);
+            
+            if (matcher.find()) {
+                int amount = Integer.parseInt(matcher.group(1));
+                String unit = matcher.group(2);
+                
+                LocalDateTime now = LocalDateTime.now();
+                
+                switch (unit) {
+                    case "second":
+                        return now.minusSeconds(amount);
+                    case "minute":
+                        return now.minusMinutes(amount);
+                    case "hour":
+                        return now.minusHours(amount);
+                    case "day":
+                        return now.minusDays(amount);
+                    case "week":
+                        return now.minusWeeks(amount);
+                    case "month":
+                        return now.minusMonths(amount);
+                    case "year":
+                        return now.minusYears(amount);
+                    default:
+                        return null;
+                }
+            }
+            
+            // Handle "Today", "Yesterday", etc
+            if (timeStr.equals("today")) {
+                return LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
+            }
+            if (timeStr.equals("yesterday")) {
+                return LocalDateTime.now().minusDays(1).withHour(0).withMinute(0).withSecond(0);
+            }
+            
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**
