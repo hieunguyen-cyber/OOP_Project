@@ -5,10 +5,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 
-/**
- * View component of MVC pattern - Main GUI with comprehensive tabbed interface.
- * Includes: Web Crawler, Data Collection, Problem 1 & 2 Analysis.
- */
 public class View extends JFrame implements ModelListener {
     private Model model;
     private JTabbedPane mainTabbedPane;
@@ -31,7 +27,6 @@ public class View extends JFrame implements ModelListener {
         setLocationRelativeTo(null);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
 
-        // Add proper cleanup on window close
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
@@ -44,33 +39,26 @@ public class View extends JFrame implements ModelListener {
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         mainPanel.setBackground(new Color(240, 240, 240));
 
-        // Title panel
         JPanel titlePanel = createTitlePanel();
         mainPanel.add(titlePanel, BorderLayout.NORTH);
 
-        // Tabbed pane with all major components
         mainTabbedPane = new JTabbedPane();
         mainTabbedPane.setFont(new Font("Arial", Font.BOLD, 12));
 
-        // Tab 0: Web Crawler
         crawlPanel = new CrawlControlPanel(model);
         mainTabbedPane.addTab("🌐 Crawl Web", crawlPanel);
 
-        // Tab 1: Manual Data Entry
         dataCollectionPanel = new DataCollectionPanel(model);
         mainTabbedPane.addTab("✏️  Data Entry", dataCollectionPanel);
 
-        // Tab 2: Comments Management
         commentPanel = new CommentManagementPanel(model);
         mainTabbedPane.addTab("💬 Comments Manager", commentPanel);
 
-        // Tab 3: Advanced Analysis
         advancedAnalysisPanel = new AdvancedAnalysisPanel(model);
         mainTabbedPane.addTab("📊 Analysis", advancedAnalysisPanel);
 
         mainPanel.add(mainTabbedPane, BorderLayout.CENTER);
 
-        // Status bar
         JPanel statusPanel = createStatusPanel();
         mainPanel.add(statusPanel, BorderLayout.SOUTH);
 
@@ -113,7 +101,6 @@ public class View extends JFrame implements ModelListener {
         statusLabel.setFont(new Font("Monospaced", Font.PLAIN, 11));
         panel.add(statusLabel, BorderLayout.WEST);
 
-        // Quick info panel
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
 
@@ -145,21 +132,18 @@ public class View extends JFrame implements ModelListener {
         try {
             System.out.println("Saving data before exit...");
             
-            // Save persisted data
             model.savePersistedData();
             
-            // Save custom disaster types
             com.humanitarian.logistics.database.DataPersistenceManager persistenceManager = 
                 model.getPersistenceManager();
             persistenceManager.saveDisasters(com.humanitarian.logistics.model.DisasterManager.getInstance());
             
-            // Suppress any cleanup errors to prevent "Errors during cleaning null"
             try {
                 if (commentPanel != null) {
-                    // CommentPanel cleanup
+
                 }
             } catch (Throwable t) {
-                // Silently ignore
+
             }
             
             System.out.println("✓ Cleanup complete. Exiting...");
@@ -170,4 +154,3 @@ public class View extends JFrame implements ModelListener {
         }
     }
 }
-

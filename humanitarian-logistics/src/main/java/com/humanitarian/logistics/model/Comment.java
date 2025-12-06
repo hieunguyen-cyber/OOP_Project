@@ -4,10 +4,6 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-/**
- * Represents a comment on a post.
- * Demonstrates encapsulation and composition principles.
- */
 public class Comment implements Serializable, Comparable<Comment> {
     private static final long serialVersionUID = 1L;
 

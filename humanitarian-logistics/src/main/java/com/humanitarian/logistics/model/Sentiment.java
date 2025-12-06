@@ -3,10 +3,6 @@ package com.humanitarian.logistics.model;
 import java.io.Serializable;
 import java.util.Objects;
 
-/**
- * Represents sentiment analysis result for a post/comment.
- * Demonstrates encapsulation and immutability principles.
- */
 public class Sentiment implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -15,8 +11,8 @@ public class Sentiment implements Serializable {
     }
 
     private final SentimentType type;
-    private final double confidence; // confidence score (0-1)
-    private final String rawText; // original text analyzed
+    private final double confidence;
+    private final String rawText;
 
     public Sentiment(SentimentType type, double confidence, String rawText) {
         if (confidence < 0 || confidence > 1) {

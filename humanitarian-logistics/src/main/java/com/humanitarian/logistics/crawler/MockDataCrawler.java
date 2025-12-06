@@ -7,16 +7,6 @@ import com.humanitarian.logistics.sentiment.PythonCategoryClassifier;
 import java.time.LocalDateTime;
 import java.util.*;
 
-/**
- * Mock Data Crawler for testing and demo purposes.
- * Generates realistic sample data without requiring actual web scraping.
- * 
- * Features:
- * - Category-specific content for each relief type
- * - Temporal distribution with time-based sentiment evolution
- * - Realistic sentiment patterns per category
- * - Comments with ACTUAL sentiment analysis and category classification (ML-based)
- */
 public class MockDataCrawler implements DataCrawler {
     private final boolean initialized;
     private final Random random;
@@ -35,11 +25,10 @@ public class MockDataCrawler implements DataCrawler {
     public List<Post> crawlPosts(List<String> keywords, List<String> hashtags, int limit) {
         List<Post> posts = new ArrayList<>();
 
-        // Category-specific content templates
         Map<ReliefItem.Category, String[]> categoryContents = new HashMap<>();
         
         categoryContents.put(ReliefItem.Category.CASH, new String[]{
-            // Early period - problems, delays, insufficient
+
             "💰 Cash assistance program launched today! Eligible families can register immediately.",
             "Families waiting for cash support. Registration process began this morning at 5 different centers.",
             "Initial cash distribution encountered system issues. Payment processing delayed by 2 days.",
@@ -50,7 +39,7 @@ public class MockDataCrawler implements DataCrawler {
             "Registration requirements complex and unclear. Families confused about eligibility.",
             "Cash delivery points insufficient. Only 3 centers in entire district of 50,000.",
             "Corruption allegations: Some officials allegedly skimming from relief funds.",
-            // Mid period - gradual improvement
+
             "Good news: Cash disbursement began smoothly. Hundreds of families received support.",
             "Update: 500 families received emergency cash assistance in first week.",
             "Financial aid distribution ongoing at 8 new distribution centers this week.",
@@ -61,7 +50,7 @@ public class MockDataCrawler implements DataCrawler {
             "Families receiving cash beginning small businesses. Positive economic impact.",
             "Second round of cash distribution planning to begin next month.",
             "Community leaders report satisfaction with cash program.",
-            // Late period - effective, positive outcomes
+
             "Cash assistance proving effective. Families report improved ability to meet needs.",
             "Success story: Family with 5 children now able to rent safe house.",
             "Economic activity increasing. Local markets busier with cash-supported families.",
@@ -75,7 +64,7 @@ public class MockDataCrawler implements DataCrawler {
         });
 
         categoryContents.put(ReliefItem.Category.MEDICAL, new String[]{
-            // Early period - shortages, deaths, crisis
+
             "🚑 First confirmed cases reported in affected area. Healthcare workers on alert.",
             "Medical crisis alert: Only 1 doctor available for 10,000 residents.",
             "Hospitals overwhelmed with patients. Not enough beds for seriously ill.",
@@ -85,7 +74,7 @@ public class MockDataCrawler implements DataCrawler {
             "Disease outbreak spreading. Vaccination campaign delayed due to supply shortage.",
             "Medical staff exhausted: Working 18-hour shifts with minimal equipment.",
             "Patients queuing for hours. Some die waiting for treatment.",
-            // Mid period - gradual improvement
+
             "✅ Mobile clinic visited 3 villages yesterday. Treated 150+ patients successfully.",
             "Great news: Vaccine shipment arrived! Healthcare staff vaccinating today.",
             "Medical support improving. Healthcare workers more dedicated now.",
@@ -95,7 +84,7 @@ public class MockDataCrawler implements DataCrawler {
             "Healthcare challenges: Staff shortages in remote regions still.",
             "Health situation stabilizing: Patient wait times reduced significantly.",
             "Vaccination program reaching remote villages successfully.",
-            // Late period - effective, health improving
+
             "🏥 Health metrics improving dramatically. Disease cases declining.",
             "Medical breakthroughs: New treatment protocols reducing mortality rates.",
             "❌ Medical services failing: People dying from treatable illnesses.",
@@ -109,7 +98,7 @@ public class MockDataCrawler implements DataCrawler {
         });
 
         categoryContents.put(ReliefItem.Category.SHELTER, new String[]{
-            // Early period - homelessness, danger, cold
+
             "🏚️ Thousands of families homeless after disaster. Sleeping under trees.",
             "Urgent: Shelter crisis deepening. Winter approaching, families in danger.",
             "Rain last night: Many families got wet. Children crying from cold.",
@@ -119,7 +108,7 @@ public class MockDataCrawler implements DataCrawler {
             "Tent supplies insufficient: Only 1,000 tents for 5,000 homeless families.",
             "Families moving to schools and temples. Private spaces invaded.",
             "Winter will be deadly: Families unprepared for cold season.",
-            // Mid period - construction, slow progress
+
             "🏠 Temporary shelters constructed in 5 new locations. Good progress!",
             "Shelter setup completed. Families have safe places now.",
             "Families moving into temporary housing. Grateful for the support.",
@@ -129,7 +118,7 @@ public class MockDataCrawler implements DataCrawler {
             "Housing shortage persists. Many families still in inadequate structures.",
             "Construction pace accelerating. 500 shelters completed this month.",
             "Families training in building skills. Starting own constructions.",
-            // Late period - permanent housing, stability
+
             "🏘️ Shelter conditions improving. Repairs completed before rainy season.",
             "Permanent housing program halfway done. 2,000 houses rebuilt.",
             "❌ Housing crisis: Families still in dangerous conditions.",
@@ -143,7 +132,7 @@ public class MockDataCrawler implements DataCrawler {
         });
 
         categoryContents.put(ReliefItem.Category.FOOD, new String[]{
-            // Early period - hunger, starvation, scarcity
+
             "🚨 Food crisis: Markets destroyed. No food available in affected area.",
             "Hunger spreading fast. Children showing signs of malnutrition.",
             "Food prices skyrocketing: Normal families cannot afford meals.",
@@ -153,7 +142,7 @@ public class MockDataCrawler implements DataCrawler {
             "Children crying from hunger. Mothers rationing own food to feed kids.",
             "Famine conditions developing. Aid organizations overwhelmed.",
             "Deaths reported: Some elderly died from malnutrition.",
-            // Mid period - distribution starting, gradual improvement
+
             "🍚 Food distribution completed successfully today. Everyone got supplies.",
             "Great: Abundance of food at distribution points. No shortages.",
             "Food quality good. Families satisfied with supplies.",
@@ -163,7 +152,7 @@ public class MockDataCrawler implements DataCrawler {
             "Variety improving: Rice, vegetables, fish, oil distributed.",
             "Farmers restarting production: Crops growing in fields.",
             "Markets reopening: Some food available for purchase.",
-            // Late period - food security, production recovery
+
             "Food shortage worsening: Ration cuts necessary.",
             "🌾 Food security improving: Harvest season approaching.",
             "Agricultural production 70% of normal levels now.",
@@ -177,7 +166,7 @@ public class MockDataCrawler implements DataCrawler {
         });
 
         categoryContents.put(ReliefItem.Category.TRANSPORTATION, new String[]{
-            // Early period - stranded, isolated, no movement
+
             "🚨 Roads destroyed: Communities completely isolated.",
             "Evacuation impossible: Heavy equipment blocked by debris.",
             "❌ Transport system collapsed: No vehicles available.",
@@ -187,7 +176,7 @@ public class MockDataCrawler implements DataCrawler {
             "Fuel shortage: Remaining vehicles unable to operate.",
             "Bridges destroyed: 5 communities cut off completely.",
             "Walking 30km to reach nearest medical clinic.",
-            // Mid period - gradual reconnection
+
             "🚗 Fleet of vehicles assembled. Evacuation operations ready.",
             "Transportation system working smoothly. People reaching destinations efficiently.",
             "Vehicles available for medical and supply transport. Operations effective.",
@@ -197,7 +186,7 @@ public class MockDataCrawler implements DataCrawler {
             "Emergency routes established: Alternative paths available.",
             "Temporary bridges built: Crossing now possible.",
             "Vehicle maintenance network established.",
-            // Late period - full connectivity, commerce
+
             "Limited vehicles still. Some areas not yet served.",
             "🚕 Fuel shortages impacting operations. Routes suspended.",
             "Transport system functioning normally. Regular schedules.",
@@ -220,13 +209,12 @@ public class MockDataCrawler implements DataCrawler {
         LocalDateTime baseTime = LocalDateTime.now().minusDays(90);
         int postIndex = 0;
 
-        // Generate MANY posts spread across 90 days for realistic chart visualization
         for (ReliefItem.Category category : categoryContents.keySet()) {
             String[] contents = categoryContents.get(category);
-            int postsPerCategory = Math.max(limit / 5, 16); // More posts per category
+            int postsPerCategory = Math.max(limit / 5, 16);
 
             for (int i = 0; i < postsPerCategory && postIndex < limit; i++) {
-                // Spread across 90 days with multiple posts per day
+
                 int dayOffset = random.nextInt(90);
                 int hour = 6 + random.nextInt(16);
                 int minute = random.nextInt(60);
@@ -235,8 +223,7 @@ public class MockDataCrawler implements DataCrawler {
                     .plusHours(hour)
                     .plusMinutes(minute);
 
-                // Content selection based on day progression (early=negative, late=positive)
-                double dayProgress = dayOffset / 90.0; // 0.0 to 1.0
+                double dayProgress = dayOffset / 90.0;
                 double contentProgress = dayProgress * (contents.length - 1);
                 int contentIndex = Math.min((int) contentProgress, contents.length - 1);
                 
@@ -256,13 +243,11 @@ public class MockDataCrawler implements DataCrawler {
                     "CHANNEL_" + (postIndex % 3 == 0 ? "OFFICIAL" : "COMMUNITY")
                 );
 
-                // Analyze sentiment instead of using default
                 Sentiment analyzedSentiment = sentimentAnalyzer.analyzeSentiment(content);
                 post.setSentiment(analyzedSentiment);
                 post.setReliefItem(reliefItem);
                 post.setLikes(random.nextInt(800) + 30);
                 
-                // Set disaster type - randomly assign from available disasters
                 List<String> disasterNames = DisasterManager.getInstance().getAllDisasterNames();
                 if (!disasterNames.isEmpty()) {
                     String randomDisaster = disasterNames.get(random.nextInt(disasterNames.size()));
@@ -272,7 +257,6 @@ public class MockDataCrawler implements DataCrawler {
                     }
                 }
 
-                // Add comments with related sentiments
                 addMockComments(post, category, contentIndex);
 
                 posts.add(post);
@@ -283,12 +267,6 @@ public class MockDataCrawler implements DataCrawler {
         return posts;
     }
 
-    /**
-     * Add realistic comments with category-specific and sentiment-appropriate content
-     */
-    /**
-     * Add realistic comments with actual sentiment analysis and category classification
-     */
     private void addMockComments(YouTubePost post, ReliefItem.Category category, int contentIndex) {
         Map<ReliefItem.Category, String[]> commentsByCategory = new HashMap<>();
 
@@ -334,7 +312,7 @@ public class MockDataCrawler implements DataCrawler {
 
         String[] commentAuthors = {"User_A", "User_B", "User_C", "Resident_X", "Community_Member", "Local_Voice"};
 
-        int commentCount = random.nextInt(3) + 1; // 1-3 comments per post
+        int commentCount = random.nextInt(3) + 1;
         String[] categoryComments = commentsByCategory.get(category);
 
         for (int i = 0; i < commentCount; i++) {
@@ -348,16 +326,14 @@ public class MockDataCrawler implements DataCrawler {
                 commentAuthors[i % commentAuthors.length]
             );
 
-            // ✅ ANALYZE SENTIMENT using EnhancedSentimentAnalyzer
             Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(commentText);
             comment.setSentiment(sentiment);
             
-            // ✅ CLASSIFY CATEGORY using ML model (facebook/bart-large-mnli)
             ReliefItem.Category classifiedCategory = categoryClassifier.classifyText(commentText);
             if (classifiedCategory != null) {
                 comment.setReliefItem(new ReliefItem(classifiedCategory, "ML-classified (facebook/bart-large-mnli)", 3));
             } else {
-                // Fallback to parent post's category if API not available
+
                 comment.setReliefItem(new ReliefItem(category, "From parent post category", 2));
             }
             

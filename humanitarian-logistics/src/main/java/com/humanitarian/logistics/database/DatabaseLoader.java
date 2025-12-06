@@ -6,24 +6,18 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.io.File;
 
-/**
- * Utility class to load data from dev-ui's curated database.
- * Reads posts and comments from humanitarian_logistics_curated.db
- */
 public class DatabaseLoader {
     
-    // Method to get dev-ui database path - computed every time to pick up new files
     private static String getDevUIDbPath() {
         String currentDir = System.getProperty("user.dir");
         String dbPath;
         
-        // Always resolve to absolute path from OOP_Project root
         if (currentDir.endsWith("humanitarian-logistics")) {
-            // If running from humanitarian-logistics dir, go up to root then to dev-ui
+
             File rootDir = new File(currentDir).getParentFile();
             dbPath = rootDir.getAbsolutePath() + "/dev-ui/data/humanitarian_logistics_curated.db";
         } else {
-            // If running from OOP_Project root
+
             dbPath = currentDir + "/dev-ui/data/humanitarian_logistics_curated.db";
         }
         
@@ -37,31 +31,28 @@ public class DatabaseLoader {
         model.getPosts().clear();
         loadFromDevUIDatabase(model);
         
-        // Save loaded data to user database to ensure persistence
         saveLoadedDataToUserDatabase(model);
     }
     
     private static void saveLoadedDataToUserDatabase(Model model) {
         DatabaseManager dbManager = null;
         try {
-            // Always ensure data directory exists and use it
+
             String currentDir = System.getProperty("user.dir");
             String basePath;
             
-            // Resolve correct base path - works whether running from root or from subdir
             File currentFile = new File(currentDir);
             File projectRoot = currentFile;
             
-            // Navigate up to find 'humanitarian-logistics' folder
             while (projectRoot != null && !projectRoot.getName().equals("OOP_Project")) {
                 projectRoot = projectRoot.getParentFile();
             }
             
             if (projectRoot != null) {
-                // Found OOP_Project root
+
                 basePath = projectRoot.getAbsolutePath() + "/humanitarian-logistics/data";
             } else {
-                // Fallback: assume standard structure
+
                 if (currentDir.endsWith("humanitarian-logistics")) {
                     basePath = currentDir + "/data";
                 } else {
@@ -69,19 +60,16 @@ public class DatabaseLoader {
                 }
             }
             
-            // Ensure data directory exists
             File dataDir = new File(basePath);
             if (!dataDir.exists()) {
                 dataDir.mkdirs();
-                System.out.println("DEBUG: Created data directory: " + basePath);
             }
             
-            // Delete old user database file and connections to reset it
             String dbFilePath = basePath + "/humanitarian_logistics_user.db";
             java.io.File userDbFile = new java.io.File(dbFilePath);
             if (userDbFile.exists()) {
                 userDbFile.delete();
-                // Also delete journal file if exists
+
                 java.io.File journalFile = new java.io.File(dbFilePath + "-journal");
                 if (journalFile.exists()) {
                     journalFile.delete();
@@ -94,18 +82,13 @@ public class DatabaseLoader {
                 if (walFile.exists()) {
                     walFile.delete();
                 }
-                Thread.sleep(200); // Wait for file system to fully release
+                Thread.sleep(200);
             }
             
-            System.out.println("DEBUG: Database will be saved to: " + dbFilePath);
-            System.out.println("DEBUG: Creating fresh DatabaseManager for user database...");
-            // Create new DatabaseManager (will create fresh database)
+
             dbManager = new DatabaseManager();
-            System.out.println("DEBUG: DatabaseManager created, now saving " + model.getPosts().size() + " posts");
             
-            // Save all loaded posts and their comments
             for (Post post : model.getPosts()) {
-                System.out.println("DEBUG: Saving post " + post.getPostId() + " with " + post.getComments().size() + " comments");
                 dbManager.savePost(post);
             }
             dbManager.commit();
@@ -125,7 +108,6 @@ public class DatabaseLoader {
             Class.forName("org.sqlite.JDBC");
             String dbPath = getDevUIDbPath();
             String dbUrl = "jdbc:sqlite:" + dbPath;
-            System.out.println("DEBUG: Connecting to: " + dbUrl);
             try (Connection connection = DriverManager.getConnection(dbUrl)) {
                 loadPostsFromDevUI(connection, model);
                 loadCommentsFromDevUI(connection, model);
@@ -154,27 +136,18 @@ public class DatabaseLoader {
                     rs.getString("source")
                 );
                 
-                // Don't load sentiment from DB - force re-analysis with Python API
-                // String sentimentStr = rs.getString("sentiment");
-                // if (sentimentStr != null && !sentimentStr.isEmpty()) {
-                //     ...
-                // }
-                
-                // Set relief category if available
                 String categoryStr = rs.getString("relief_category");
                 if (categoryStr != null && !categoryStr.isEmpty()) {
                     try {
                         ReliefItem.Category category = ReliefItem.Category.valueOf(categoryStr);
                         post.setReliefItem(new ReliefItem(category, categoryStr, 1));
                     } catch (IllegalArgumentException e) {
-                        // Invalid category, skip
+
                     }
                 }
                 
-                // Set disaster keyword
                 post.setDisasterKeyword(rs.getString("disaster_keyword"));
                 
-                // Try to set disaster type
                 String keyword = rs.getString("disaster_keyword");
                 if (keyword != null && !keyword.isEmpty()) {
                     DisasterType disaster = DisasterManager.getInstance().findDisasterType(keyword);
@@ -200,7 +173,6 @@ public class DatabaseLoader {
                 String author = rs.getString("author");
                 LocalDateTime createdAt = LocalDateTime.parse(rs.getString("created_at"));
                 
-                // Find the post this comment belongs to
                 Post targetPost = null;
                 for (Post post : model.getPosts()) {
                     if (post.getPostId().equals(postId)) {
@@ -210,27 +182,19 @@ public class DatabaseLoader {
                 }
                 
                 if (targetPost != null) {
-                    // Create comment
+
                     Comment comment = new Comment(commentId, postId, content, createdAt, author);
                     
-                    // Don't load sentiment from DB - force re-analysis with Python API
-                    // String sentimentStr = rs.getString("sentiment");
-                    // if (sentimentStr != null && !sentimentStr.isEmpty()) {
-                    //     ...
-                    // }
-                    
-                    // Set relief category if available
                     String categoryStr = rs.getString("relief_category");
                     if (categoryStr != null && !categoryStr.isEmpty()) {
                         try {
                             ReliefItem.Category category = ReliefItem.Category.valueOf(categoryStr);
                             comment.setReliefItem(new ReliefItem(category, categoryStr, 1));
                         } catch (IllegalArgumentException e) {
-                            // Invalid category, skip
+
                         }
                     }
                     
-                    // Add comment to post
                     targetPost.addComment(comment);
                 }
             }

@@ -4,24 +4,19 @@ import com.humanitarian.logistics.model.*;
 import java.io.*;
 import java.util.*;
 
-/**
- * Manages persistent storage of posts and disaster types.
- * Saves/loads data to/from local cache files.
- */
 public class DataPersistenceManager {
     private String postsFile;
     private String disastersFile;
     
     private String getDataDir() {
-        // Get current working directory and find the data folder
+
         String currentDir = new File(".").getAbsolutePath();
         File dataDir;
         
-        // If running from humanitarian-logistics directory, use data
         if (currentDir.endsWith("humanitarian-logistics")) {
             dataDir = new File("data");
         } else {
-            // If running from project root, use humanitarian-logistics/data
+
             dataDir = new File("humanitarian-logistics/data");
         }
         
@@ -35,12 +30,9 @@ public class DataPersistenceManager {
         String dataDir = getDataDir();
         this.postsFile = dataDir + "/posts.dat";
         this.disastersFile = dataDir + "/disasters.dat";
-        // Data directory is already created in getDataDir() static method
+
     }
 
-    /**
-     * Save posts to persistent storage
-     */
     public void savePosts(List<Post> posts) {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(this.postsFile))) {
             oos.writeObject(new ArrayList<>(posts));
@@ -50,9 +42,6 @@ public class DataPersistenceManager {
         }
     }
 
-    /**
-     * Load posts from persistent storage
-     */
     @SuppressWarnings("unchecked")
     public List<Post> loadPosts() {
         File file = new File(this.postsFile);
@@ -70,12 +59,9 @@ public class DataPersistenceManager {
         }
     }
 
-    /**
-     * Save disaster types to persistent storage
-     */
     public void saveDisasters(DisasterManager manager) {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(this.disastersFile))) {
-            // Save all non-default disaster types
+
             Set<String> defaultDisasters = new HashSet<>(Arrays.asList(
                 "yagi", "matmo", "bualo", "koto", "fung-wong"
             ));
@@ -94,9 +80,6 @@ public class DataPersistenceManager {
         }
     }
 
-    /**
-     * Load custom disaster types from persistent storage
-     */
     @SuppressWarnings("unchecked")
     public void loadDisasters(DisasterManager manager) {
         File file = new File(this.disastersFile);
@@ -115,9 +98,6 @@ public class DataPersistenceManager {
         }
     }
 
-    /**
-     * Clear all persistent data
-     */
     public void clearAllData() {
         File postsFileObj = new File(this.postsFile);
         File disastersFileObj = new File(this.disastersFile);
@@ -132,16 +112,10 @@ public class DataPersistenceManager {
         System.out.println("✓ All persistent data cleared");
     }
 
-    /**
-     * Check if saved data exists
-     */
     public boolean hasSavedData() {
         return new File(this.postsFile).exists();
     }
 
-    /**
-     * Get data directory path
-     */
     public String getDataDirectory() {
         return getDataDir();
     }

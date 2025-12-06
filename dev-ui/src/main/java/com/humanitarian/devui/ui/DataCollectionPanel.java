@@ -7,14 +7,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Redesigned Data Collection Panel for dev-ui.
- * Simple, intuitive interface for adding posts with comments.
- * Features:
- * - Post Content: User input (ID auto-generated)
- * - Comments: Each line = one comment (parsed and saved separately)
- * - One-click save: Saves post + all comments to database
- */
 public class DataCollectionPanel extends JPanel {
     private final Model model;
     private JTextArea postContentArea;
@@ -35,20 +27,16 @@ public class DataCollectionPanel extends JPanel {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createTitledBorder("📝 Data Collection - Add Posts & Comments"));
 
-        // Main content area - two panels side by side
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new GridLayout(1, 2, 10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Left side - Post input
         mainPanel.add(createPostInputPanel());
 
-        // Right side - Comments input
         mainPanel.add(createCommentsInputPanel());
 
         add(mainPanel, BorderLayout.CENTER);
 
-        // Bottom panel - Control buttons and status
         JPanel bottomPanel = createBottomPanel();
         add(bottomPanel, BorderLayout.SOUTH);
     }
@@ -58,19 +46,16 @@ public class DataCollectionPanel extends JPanel {
         panel.setLayout(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createTitledBorder("Post Information"));
 
-        // Input fields panel
         JPanel fieldsPanel = new JPanel();
         fieldsPanel.setLayout(new BoxLayout(fieldsPanel, BoxLayout.Y_AXIS));
         fieldsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Author
         fieldsPanel.add(new JLabel("Author:"));
         authorField = new JTextField("Anonymous");
         authorField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
         fieldsPanel.add(authorField);
         fieldsPanel.add(Box.createVerticalStrut(8));
 
-        // Disaster Type
         fieldsPanel.add(new JLabel("Disaster Type:"));
         disasterTypeCombo = new JComboBox<>();
         updateDisasterTypeCombo();
@@ -78,14 +63,12 @@ public class DataCollectionPanel extends JPanel {
         fieldsPanel.add(disasterTypeCombo);
         fieldsPanel.add(Box.createVerticalStrut(8));
 
-        // Relief Category
         fieldsPanel.add(new JLabel("Relief Category:"));
         categoryCombo = new JComboBox<>(ReliefItem.Category.values());
         categoryCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
         fieldsPanel.add(categoryCombo);
         fieldsPanel.add(Box.createVerticalStrut(8));
 
-        // Sentiment
         fieldsPanel.add(new JLabel("Sentiment:"));
         sentimentCombo = new JComboBox<>(Sentiment.SentimentType.values());
         sentimentCombo.setSelectedItem(Sentiment.SentimentType.NEUTRAL);
@@ -93,13 +76,11 @@ public class DataCollectionPanel extends JPanel {
         fieldsPanel.add(sentimentCombo);
         fieldsPanel.add(Box.createVerticalStrut(8));
 
-        // Confidence
         fieldsPanel.add(new JLabel("Confidence (0.0 - 1.0):"));
         confidenceSpinner = new JSpinner(new SpinnerNumberModel(0.8, 0.0, 1.0, 0.1));
         fieldsPanel.add(confidenceSpinner);
         fieldsPanel.add(Box.createVerticalStrut(10));
 
-        // Post content
         fieldsPanel.add(new JLabel("Post Content:"));
         postContentArea = new JTextArea(8, 35);
         postContentArea.setLineWrap(true);
@@ -108,7 +89,6 @@ public class DataCollectionPanel extends JPanel {
         fieldsPanel.add(postScroll);
         fieldsPanel.add(Box.createVerticalStrut(5));
 
-        // Info label
         JLabel infoLabel = new JLabel("Post ID will be auto-generated");
         infoLabel.setFont(new Font("Arial", Font.ITALIC, 10));
         infoLabel.setForeground(new Color(100, 100, 100));
@@ -136,7 +116,6 @@ public class DataCollectionPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(commentsArea);
         contentPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Example label
         JLabel exampleLabel = new JLabel("Example: Line 1 = Comment 1, Line 2 = Comment 2, etc.");
         exampleLabel.setFont(new Font("Arial", Font.ITALIC, 10));
         exampleLabel.setForeground(new Color(100, 100, 100));
@@ -151,21 +130,17 @@ public class DataCollectionPanel extends JPanel {
         panel.setLayout(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Status label
         statusLabel = new JLabel("Ready to add new post with comments");
         panel.add(statusLabel, BorderLayout.WEST);
 
-        // Button panel
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 5, 0));
 
-        // Clear button
         JButton clearButton = new JButton("Clear");
         clearButton.setPreferredSize(new Dimension(100, 35));
         clearButton.addActionListener(e -> clearForm());
         buttonPanel.add(clearButton);
 
-        // Save button
         JButton saveButton = new JButton("💾 Save Post & Comments");
         saveButton.setPreferredSize(new Dimension(200, 35));
         saveButton.setFont(new Font("Arial", Font.BOLD, 12));
@@ -188,7 +163,6 @@ public class DataCollectionPanel extends JPanel {
         Sentiment.SentimentType sentiment = (Sentiment.SentimentType) sentimentCombo.getSelectedItem();
         double confidence = ((Number) confidenceSpinner.getValue()).doubleValue();
 
-        // Validation
         if (postContent.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Please enter post content", "Validation Error", JOptionPane.WARNING_MESSAGE);
             return;
@@ -200,11 +174,10 @@ public class DataCollectionPanel extends JPanel {
         }
 
         try {
-            // Generate unique post ID
+
             String postId = UUID.randomUUID().toString().substring(0, 13);
             LocalDateTime now = LocalDateTime.now();
 
-            // Create and save post
             YouTubePost post = new YouTubePost(
                 postId,
                 postContent,
@@ -213,14 +186,12 @@ public class DataCollectionPanel extends JPanel {
                 "manual_entry"
             );
 
-            // Set post metadata
             post.setDisasterKeyword(disasterType);
             post.setSentiment(new Sentiment(sentiment, confidence, postContent));
             if (category != null) {
                 post.setReliefItem(new ReliefItem(category, category.name(), 1));
             }
 
-            // Set disaster type
             DisasterType disaster = DisasterManager.getInstance().findDisasterType(disasterType);
             if (disaster != null) {
                 post.setDisasterType(disaster);
@@ -228,7 +199,6 @@ public class DataCollectionPanel extends JPanel {
 
             int commentCount = 0;
 
-            // Parse and add comments BEFORE adding post to model
             if (!commentsText.isEmpty()) {
                 String[] commentLines = commentsText.split("\n");
                 for (String line : commentLines) {
@@ -236,10 +206,8 @@ public class DataCollectionPanel extends JPanel {
                     if (!line.isEmpty()) {
                         commentCount++;
                         
-                        // Generate comment ID
                         String commentId = "COMMENT_" + System.currentTimeMillis() + "_" + commentCount;
 
-                        // Create comment
                         Comment comment = new Comment(
                             commentId,
                             postId,
@@ -248,22 +216,18 @@ public class DataCollectionPanel extends JPanel {
                             author.isEmpty() ? "Anonymous" : author
                         );
 
-                        // Set comment metadata
                         comment.setSentiment(new Sentiment(sentiment, confidence, line));
                         if (category != null) {
                             comment.setReliefItem(new ReliefItem(category, category.name(), 1));
                         }
 
-                        // Add comment to post
                         post.addComment(comment);
                     }
                 }
             }
 
-            // NOW add post to model with all comments already attached
             model.addPost(post);
 
-            // Show success message
             String message = String.format(
                 "✓ Post saved successfully!\n\n" +
                 "Post ID: %s\n" +
@@ -276,7 +240,6 @@ public class DataCollectionPanel extends JPanel {
             statusLabel.setText("✓ Post saved with " + commentCount + " comments");
             JOptionPane.showMessageDialog(this, message, "Success", JOptionPane.INFORMATION_MESSAGE);
 
-            // Clear form
             clearForm();
 
         } catch (Exception ex) {

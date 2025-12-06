@@ -4,10 +4,6 @@ import com.humanitarian.devui.model.*;
 import java.util.*;
 import java.time.LocalDateTime;
 
-/**
- * Buffer for managing session data before committing to database.
- * Allows users to edit, review, and confirm before saving.
- */
 public class SessionDataBuffer {
     private List<Post> pendingPosts = new ArrayList<>();
     private List<Comment> pendingComments = new ArrayList<>();
@@ -17,7 +13,7 @@ public class SessionDataBuffer {
     public void addPost(Post post) {
         pendingPosts.add(post);
         postMap.put(post.getPostId(), post);
-        // Also add all comments from this post to pending comments
+
         for (Comment comment : post.getComments()) {
             pendingComments.add(comment);
         }

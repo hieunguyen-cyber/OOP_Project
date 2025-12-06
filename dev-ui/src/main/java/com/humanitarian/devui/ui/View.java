@@ -6,10 +6,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 
-/**
- * View component of MVC pattern - Main GUI with comprehensive tabbed interface.
- * Dev mode: Data Entry, Comment Management with Save/Cancel system.
- */
 public class View extends JFrame implements ModelListener {
     private Model model;
     private SessionDataBuffer dataBuffer;
@@ -35,7 +31,6 @@ public class View extends JFrame implements ModelListener {
         setLocationRelativeTo(null);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
 
-        // Add proper cleanup on window close
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
@@ -48,33 +43,26 @@ public class View extends JFrame implements ModelListener {
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         mainPanel.setBackground(new Color(240, 240, 240));
 
-        // Title panel
         JPanel titlePanel = createTitlePanel();
         mainPanel.add(titlePanel, BorderLayout.NORTH);
 
-        // Tabbed pane with all major components
         mainTabbedPane = new JTabbedPane();
         mainTabbedPane.setFont(new Font("Arial", Font.BOLD, 12));
 
-        // Tab 0: Web Crawler
         crawlPanel = new CrawlControlPanel(model, dataBuffer);
         mainTabbedPane.addTab("🌐 Crawl Web", crawlPanel);
 
-        // Tab 1: Manual Data Entry
         dataCollectionPanel = new DataCollectionPanel(model, dataBuffer);
         mainTabbedPane.addTab("✏️  Data Entry", dataCollectionPanel);
 
-        // Tab 2: Comment Management (Excel-style)
         commentPanel = new CommentManagementPanel(model, dataBuffer);
         mainTabbedPane.addTab("💬 Comments Manager", commentPanel);
 
         mainPanel.add(mainTabbedPane, BorderLayout.CENTER);
 
-        // Control panel with Save/Cancel
         JPanel controlPanel = createControlPanel();
         mainPanel.add(controlPanel, BorderLayout.EAST);
 
-        // Status bar
         JPanel statusPanel = createStatusPanel();
         mainPanel.add(statusPanel, BorderLayout.SOUTH);
 
@@ -114,10 +102,9 @@ public class View extends JFrame implements ModelListener {
         panel.setBackground(new Color(248, 248, 248));
         panel.setPreferredSize(new Dimension(140, 0));
 
-        // Save button
         saveButton = new JButton("💾 SAVE");
         saveButton.setFont(new Font("Arial", Font.BOLD, 12));
-        saveButton.setBackground(new Color(34, 139, 34)); // Green
+        saveButton.setBackground(new Color(34, 139, 34));
         saveButton.setForeground(Color.WHITE);
         saveButton.setOpaque(true);
         saveButton.setBorderPainted(false);
@@ -126,10 +113,9 @@ public class View extends JFrame implements ModelListener {
         panel.add(saveButton);
         panel.add(Box.createVerticalStrut(10));
 
-        // Cancel button
         cancelButton = new JButton("❌ CANCEL");
         cancelButton.setFont(new Font("Arial", Font.BOLD, 12));
-        cancelButton.setBackground(new Color(211, 47, 47)); // Red
+        cancelButton.setBackground(new Color(211, 47, 47));
         cancelButton.setForeground(Color.WHITE);
         cancelButton.setOpaque(true);
         cancelButton.setBorderPainted(false);
@@ -138,7 +124,6 @@ public class View extends JFrame implements ModelListener {
         panel.add(cancelButton);
         panel.add(Box.createVerticalStrut(10));
 
-        // View buffer button
         JButton viewBufferBtn = new JButton("📋 View Buffer");
         viewBufferBtn.setFont(new Font("Arial", Font.PLAIN, 10));
         viewBufferBtn.setMaximumSize(new Dimension(120, 40));
@@ -160,7 +145,6 @@ public class View extends JFrame implements ModelListener {
         statusLabel.setFont(new Font("Monospaced", Font.PLAIN, 11));
         panel.add(statusLabel, BorderLayout.WEST);
 
-        // Quick info panel
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
 
@@ -199,43 +183,35 @@ public class View extends JFrame implements ModelListener {
                 int duplicates = 0;
                 int saved = 0;
                 
-                // Save posts (check for duplicates)
                 for (Post post : dataBuffer.getPendingPosts()) {
                     if (dbManager.isDuplicateLink(post.getPostId())) {
                         duplicates++;
                         statusLabel.setText("⚠️ Found duplicate link, skipping: " + post.getPostId());
                     } else {
-                        // Support both YouTubePost and YouTubePost
+
                         dbManager.savePost(post);
                         saved++;
                     }
                 }
 
-                // Save comments from buffer AND from posts
                 for (Comment comment : dataBuffer.getPendingComments()) {
                     dbManager.saveComment(comment);
                 }
                 
-                // Also save comments attached to posts
                 for (Post post : dataBuffer.getPendingPosts()) {
                     for (Comment comment : post.getComments()) {
                         dbManager.saveComment(comment);
                     }
                 }
                 
-                System.out.println("DEBUG: About to commit...");
                 dbManager.commit();
-                System.out.println("DEBUG: Commit done");
                 dbManager.close();
-                System.out.println("DEBUG: Close done");
 
                 dataBuffer.clear();
                 
-                // Reload data from database to show in UI
                 try {
                     DatabaseManager reloadDb = new DatabaseManager();
                     List<Post> savedPosts = reloadDb.getAllPosts();
-                    System.out.println("DEBUG: Reloaded " + savedPosts.size() + " posts");
                     for (Post post : savedPosts) {
                         model.addPost(post);
                     }
@@ -304,7 +280,6 @@ public class View extends JFrame implements ModelListener {
         try {
             System.out.println("Cleaning up resources...");
             
-            // Save persisted data before exit
             try {
                 model.savePersistedData();
                 model.getPersistenceManager().saveDisasters(DisasterManager.getInstance());
@@ -313,16 +288,15 @@ public class View extends JFrame implements ModelListener {
                 System.err.println("Warning: Could not save data: " + e.getMessage());
             }
             
-            // Suppress any cleanup errors to prevent "Errors during cleaning null"
             try {
                 if (commentPanel != null) {
-                    // CommentPanel cleanup
+
                 }
                 if (crawlPanel != null) {
-                    // CrawlPanel cleanup
+
                 }
             } catch (Throwable t) {
-                // Silently ignore
+
             }
             
             System.out.println("✓ Cleanup complete. Exiting...");
@@ -333,4 +307,3 @@ public class View extends JFrame implements ModelListener {
         }
     }
 }
-

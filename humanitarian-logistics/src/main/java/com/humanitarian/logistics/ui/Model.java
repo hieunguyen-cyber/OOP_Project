@@ -9,10 +9,6 @@ import com.humanitarian.logistics.analysis.*;
 
 import java.util.*;
 
-/**
- * Model component of MVC pattern.
- * Manages application state, data, and business logic.
- */
 public class Model {
     private List<Post> posts;
     private SentimentAnalyzer sentimentAnalyzer;
@@ -32,7 +28,6 @@ public class Model {
 
         registerAnalysisModules();
         
-        // Load persisted data
         loadPersistedData();
     }
 
@@ -60,18 +55,16 @@ public class Model {
     }
 
     public void addPost(Post post) {
-        // Classify relief item if not already done
+
         if (post.getReliefItem() == null) {
             categoryClassifier.classifyPost(post);
         }
 
-        // Analyze sentiment if not already done
         if (post.getSentiment() == null && sentimentAnalyzer != null) {
             Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(post.getContent());
             post.setSentiment(sentiment);
         }
 
-        // Classify comments
         for (Comment comment : post.getComments()) {
             if (comment.getReliefItem() == null) {
                 categoryClassifier.classifyPost(new PostAdapter(comment));
@@ -147,7 +140,6 @@ public class Model {
         }
     }
 
-    // Adapter to treat Comment as Post for classification
     private static class PostAdapter extends Post {
         PostAdapter(Comment comment) {
             super(comment.getCommentId(), comment.getContent(), comment.getCreatedAt(),
@@ -155,13 +147,10 @@ public class Model {
         }
     }
 
-    /**
-     * Load persisted data from local cache
-     */
     private void loadPersistedData() {
         List<Post> loadedPosts = persistenceManager.loadPosts();
         if (!loadedPosts.isEmpty()) {
-            // Add each post through addPost() to ensure classification is called
+
             for (Post post : loadedPosts) {
                 addPost(post);
             }
@@ -170,36 +159,20 @@ public class Model {
         }
     }
 
-    /**
-     * Save all posts to persistent storage
-     */
     public void savePersistedData() {
         persistenceManager.savePosts(posts);
     }
 
-    /**
-     * Clear all persisted data
-     */
     public void clearPersistedData() {
         persistenceManager.clearAllData();
         posts.clear();
         notifyListeners();
     }
 
-    /**
-     * Get persistence manager
-     */
     public DataPersistenceManager getPersistenceManager() {
         return persistenceManager;
     }
 
-    /**
-     * Batch analyze all posts through both classification models.
-     * Runs all posts through PythonCategoryClassifier and SentimentAnalyzer,
-     * then updates database with new classifications.
-     * 
-     * @return number of posts analyzed
-     */
     public int analyzeAllPosts() {
         System.out.println("Starting batch analysis of " + posts.size() + " posts...");
         System.out.println("✓ Category Classification: Keyword-based (Instant Vietnamese)");
@@ -208,16 +181,14 @@ public class Model {
 
         for (Post post : posts) {
             try {
-                // 1. Classify relief category using keyword-based approach
+
                 categoryClassifier.classifyPost(post);
 
-                // 2. Analyze sentiment using transformer model
                 if (sentimentAnalyzer != null) {
                     Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(post.getContent());
                     post.setSentiment(sentiment);
                 }
 
-                // 3. Analyze comments in the post
                 for (Comment comment : post.getComments()) {
                     categoryClassifier.classifyPost(new PostAdapter(comment));
                     if (sentimentAnalyzer != null) {
@@ -226,7 +197,6 @@ public class Model {
                     }
                 }
 
-                // 4. Update database with new classifications
                 dbManager.savePost(post);
                 analyzed++;
 
@@ -242,17 +212,11 @@ public class Model {
         return analyzed;
     }
 
-    /**
-     * Reset database connection after manual database reset.
-     * CRITICAL: Call this after database files are deleted to force reconnection.
-     */
     public void resetDatabaseConnection() {
-        System.out.println("DEBUG: Model.resetDatabaseConnection() called");
         if (dbManager != null) {
             try {
-                // Call reset() on the existing instance to close connection and reset flags
+
                 dbManager.reset();
-                System.out.println("DEBUG: Called reset() on existing dbManager");
             } catch (Exception e) {
                 System.err.println("Error resetting dbManager: " + e.getMessage());
             }

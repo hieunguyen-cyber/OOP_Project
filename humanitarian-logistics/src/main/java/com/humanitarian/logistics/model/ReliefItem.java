@@ -3,10 +3,6 @@ package com.humanitarian.logistics.model;
 import java.io.Serializable;
 import java.util.Objects;
 
-/**
- * Represents a relief item category (cash, medical, shelter, food, transportation).
- * Demonstrates encapsulation with immutable pattern.
- */
 public class ReliefItem implements Serializable, Comparable<ReliefItem> {
     private static final long serialVersionUID = 1L;
 
@@ -30,7 +26,7 @@ public class ReliefItem implements Serializable, Comparable<ReliefItem> {
 
     private final Category category;
     private final String description;
-    private final int priority; // 1-5, 5 being highest
+    private final int priority;
 
     public ReliefItem(Category category, String description, int priority) {
         if (priority < 1 || priority > 5) {
@@ -55,7 +51,7 @@ public class ReliefItem implements Serializable, Comparable<ReliefItem> {
 
     @Override
     public int compareTo(ReliefItem other) {
-        return Integer.compare(other.priority, this.priority); // descending order
+        return Integer.compare(other.priority, this.priority);
     }
 
     @Override

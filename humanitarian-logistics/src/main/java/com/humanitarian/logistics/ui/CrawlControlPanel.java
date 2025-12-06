@@ -11,15 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-/**
- * Panel for controlling data crawling from multiple platforms.
- * Dynamically loads crawlers from CrawlerRegistry - no hardcoding needed!
- * 
- * To add a new crawler:
- * 1. Create a class that implements DataCrawler
- * 2. Register it in CrawlerManager.initializeCrawlers()
- * 3. That's it! UI automatically adapts to new crawlers
- */
 public class CrawlControlPanel extends JPanel {
     private static final Logger LOGGER = Logger.getLogger(CrawlControlPanel.class.getName());
     private final Model model;
@@ -40,7 +31,7 @@ public class CrawlControlPanel extends JPanel {
 
     public CrawlControlPanel(Model model) {
         this.model = model;
-        // Initialize crawler registry if not already done
+
         if (crawlerRegistry.getCrawlerNames().isEmpty()) {
             CrawlerManager.initializeCrawlers();
         }
@@ -51,19 +42,15 @@ public class CrawlControlPanel extends JPanel {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createTitledBorder("Web Crawler Control"));
 
-        // Top: Platform selector
         JPanel platformPanel = createPlatformSelectorPanel();
         add(platformPanel, BorderLayout.NORTH);
 
-        // Left: Configuration panel
         JPanel configPanel = createConfigPanel();
         add(configPanel, BorderLayout.WEST);
 
-        // Right: Results panel
         JPanel resultsPanel = createResultsPanel();
         add(resultsPanel, BorderLayout.CENTER);
 
-        // Bottom: Status and progress
         JPanel bottomPanel = createBottomPanel();
         add(bottomPanel, BorderLayout.SOUTH);
     }
@@ -78,7 +65,6 @@ public class CrawlControlPanel extends JPanel {
         platformLabel.setFont(new Font("Arial", Font.BOLD, 12));
         panel.add(platformLabel);
         
-        // Dynamically populate crawlers from registry
         String[] crawlerNames = crawlerRegistry.getCrawlerDisplayNames().toArray(new String[0]);
         platformSelector = new JComboBox<>(crawlerNames);
         platformSelector.setFont(new Font("Arial", Font.PLAIN, 12));
@@ -86,7 +72,6 @@ public class CrawlControlPanel extends JPanel {
         platformSelector.setPreferredSize(new Dimension(200, 30));
         panel.add(platformSelector);
         
-        // Add crawler description tooltip
         JLabel descriptionLabel = new JLabel();
         descriptionLabel.setFont(new Font("Arial", Font.ITALIC, 10));
         descriptionLabel.setForeground(Color.GRAY);
@@ -113,7 +98,6 @@ public class CrawlControlPanel extends JPanel {
         
         setBorder(BorderFactory.createTitledBorder("Web Crawler Control - " + crawlerName));
         
-        // Update button labels and visibility based on crawler capabilities
         if (crawlButton != null) {
             crawlButton.setText("Crawl Data from " + crawlerName);
             crawlButton.setVisible(config != null && config.supportsKeywordSearch);
@@ -134,7 +118,7 @@ public class CrawlControlPanel extends JPanel {
                 return crawlerName;
             }
         }
-        return "YOUTUBE"; // Fallback
+        return "YOUTUBE";
     }
 
     private JPanel createConfigPanel() {
@@ -143,25 +127,21 @@ public class CrawlControlPanel extends JPanel {
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         panel.setPreferredSize(new Dimension(300, 0));
 
-        // ===== SECTION 1: Hashtag/Keyword Search =====
         JLabel section1Label = new JLabel("SECTION 1: Search by Hashtag/Keyword");
         section1Label.setFont(new Font("Arial", Font.BOLD, 11));
         panel.add(section1Label);
         panel.add(Box.createVerticalStrut(8));
 
-        // Video limit
         panel.add(new JLabel("Max Videos to Crawl:"));
         postLimitSpinner = new JSpinner(new SpinnerNumberModel(5, 1, 100, 1));
         panel.add(postLimitSpinner);
         panel.add(Box.createVerticalStrut(10));
 
-        // Comment limit per video
         panel.add(new JLabel("Max Comments per Video:"));
         commentLimitSpinner = new JSpinner(new SpinnerNumberModel(10, 0, 100, 5));
         panel.add(commentLimitSpinner);
         panel.add(Box.createVerticalStrut(10));
 
-        // Keywords
         panel.add(new JLabel("Keywords/Hashtags (1 per line):"));
         keywordArea = new JTextArea(5, 25);
         keywordArea.setLineWrap(true);
@@ -171,7 +151,6 @@ public class CrawlControlPanel extends JPanel {
         panel.add(keywordScroll);
         panel.add(Box.createVerticalStrut(10));
 
-        // Crawl button
         crawlButton = new JButton("Crawl Data");
         crawlButton.setFont(new Font("Arial", Font.BOLD, 12));
         crawlButton.setMaximumSize(new Dimension(250, 40));
@@ -179,7 +158,6 @@ public class CrawlControlPanel extends JPanel {
         panel.add(crawlButton);
         panel.add(Box.createVerticalStrut(15));
 
-        // ===== SECTION 2: Multiple Video URLs =====
         JLabel section2Label = new JLabel("SECTION 2: Crawl Videos by URLs");
         section2Label.setFont(new Font("Arial", Font.BOLD, 11));
         panel.add(section2Label);
@@ -194,7 +172,6 @@ public class CrawlControlPanel extends JPanel {
         panel.add(urlScroll);
         panel.add(Box.createVerticalStrut(8));
 
-        // Disaster Type Selector
         panel.add(new JLabel("Disaster Type:"));
         disasterTypeCombo = new JComboBox<>();
         updateDisasterTypeCombo();
@@ -202,7 +179,6 @@ public class CrawlControlPanel extends JPanel {
         panel.add(disasterTypeCombo);
         panel.add(Box.createVerticalStrut(5));
 
-        // Add new disaster type button
         addNewDisasterButton = new JButton("+ Add New Disaster Type");
         addNewDisasterButton.setFont(new Font("Arial", Font.PLAIN, 10));
         addNewDisasterButton.setMaximumSize(new Dimension(250, 25));
@@ -217,13 +193,11 @@ public class CrawlControlPanel extends JPanel {
         panel.add(crawlUrlButton);
         panel.add(Box.createVerticalStrut(15));
 
-        // ===== SECTION 3: Utilities =====
         JLabel section3Label = new JLabel("UTILITIES");
         section3Label.setFont(new Font("Arial", Font.BOLD, 11));
         panel.add(section3Label);
         panel.add(Box.createVerticalStrut(8));
 
-        // Use Mock Data button
         JButton mockButton = new JButton("Use Sample Data");
         mockButton.setMaximumSize(new Dimension(250, 40));
         mockButton.addActionListener(e -> loadSampleData());
@@ -231,7 +205,6 @@ public class CrawlControlPanel extends JPanel {
 
         panel.add(Box.createVerticalStrut(8));
 
-        // Reset Database button
         JButton resetDbButton = new JButton("Reset Database");
         resetDbButton.setMaximumSize(new Dimension(250, 40));
         resetDbButton.setBackground(new Color(231, 76, 60));
@@ -267,12 +240,10 @@ public class CrawlControlPanel extends JPanel {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
 
-        // Progress bar
         progressBar = new JProgressBar();
         progressBar.setStringPainted(true);
         panel.add(progressBar);
 
-        // Status label
         statusLabel = new JLabel("Ready");
         panel.add(statusLabel);
 
@@ -290,7 +261,6 @@ public class CrawlControlPanel extends JPanel {
                 int commentLimit = (Integer) commentLimitSpinner.getValue();
                 String[] keywords = keywordArea.getText().split("\n");
                 
-                // Filter and clean keywords
                 List<String> hashtags = new ArrayList<>();
                 for (String keyword : keywords) {
                     String cleaned = keyword.trim();
@@ -314,12 +284,10 @@ public class CrawlControlPanel extends JPanel {
                 List<Post> posts = new ArrayList<>();
                 boolean usedRealCrawler = false;
                 
-                // Try to initialize and use the selected crawler
                 try {
                     crawlResultsArea.append("Initializing " + crawlerDisplayName + " crawler...\n");
                     crawler = crawlerRegistry.createCrawler(selectedCrawlerName);
                     
-                    // Initialize if required
                     if (config != null && config.requiresInitialization && crawler instanceof YouTubeCrawler) {
                         ((YouTubeCrawler) crawler).initialize();
                     }
@@ -339,22 +307,19 @@ public class CrawlControlPanel extends JPanel {
                     crawlResultsArea.append("⚠️ " + crawlerDisplayName + " crawler unavailable: " + e.getMessage() + "\n\n");
                     crawlResultsArea.append("Falling back to Mock Data generator...\n\n");
                     
-                    // Fallback to mock data
                     crawler = crawlerRegistry.createCrawler("MOCK");
                     posts = crawler.crawlPosts(new ArrayList<>(List.of(keywords)), hashtags, postLimit);
                     usedRealCrawler = false;
                 }
 
-                // Add comments if using mock data (real crawlers already have comments)
                 if (!usedRealCrawler) {
                     for (Post post : posts) {
                         CrawlingUtility.addCommentsToPost(post, commentLimit);
                     }
                 }
 
-                // Process posts and add to model
                 for (Post post : posts) {
-                    // Assign disaster type based on keywords
+
                     DisasterType disasterType = CrawlingUtility.findDisasterTypeForPost(post, hashtags);
                     if (post instanceof YouTubePost) {
                         ((YouTubePost) post).setDisasterType(disasterType);
@@ -362,7 +327,6 @@ public class CrawlControlPanel extends JPanel {
                     model.addPost(post);
                 }
 
-                // Update results
                 updateCrawlResults(posts);
                 progressBar.setIndeterminate(false);
                 progressBar.setValue(100);
@@ -376,7 +340,7 @@ public class CrawlControlPanel extends JPanel {
                 e.printStackTrace();
             } finally {
                 crawlButton.setEnabled(true);
-                // Cleanup crawler resources
+
                 if (crawler != null) {
                     try {
                         crawler.shutdown();
@@ -394,7 +358,6 @@ public class CrawlControlPanel extends JPanel {
                 crawlUrlButton.setEnabled(false);
                 progressBar.setValue(0);
 
-                // Get selected disaster type
                 String selectedDisasterName = (String) disasterTypeCombo.getSelectedItem();
                 if (selectedDisasterName == null || selectedDisasterName.isEmpty()) {
                     statusLabel.setText("✗ Please select a disaster type");
@@ -404,7 +367,6 @@ public class CrawlControlPanel extends JPanel {
 
                 DisasterType selectedDisaster = DisasterManager.getInstance().getDisasterType(selectedDisasterName);
 
-                // Parse multiple URLs from textarea
                 String urlText = postUrlField.getText().trim();
                 
                 if (urlText.isEmpty()) {
@@ -413,11 +375,9 @@ public class CrawlControlPanel extends JPanel {
                     return;
                 }
 
-                // Split by newlines and filter empty lines
                 String[] urls = urlText.split("\n");
                 List<String> validUrls = new ArrayList<>();
                 
-                // YouTube URL validation only
                 for (String url : urls) {
                     String cleanUrl = url.trim();
                     if (!cleanUrl.isEmpty() && (cleanUrl.contains("youtube.com") || cleanUrl.contains("youtu.be"))) {
@@ -444,7 +404,6 @@ public class CrawlControlPanel extends JPanel {
                 int successCount = 0;
                 int failCount = 0;
 
-                // Crawl each URL
                 for (int i = 0; i < validUrls.size(); i++) {
                     String postUrl = validUrls.get(i);
                     crawlResultsArea.append("\n[" + (i + 1) + "/" + validUrls.size() + "] Processing URL:\n");
@@ -453,14 +412,13 @@ public class CrawlControlPanel extends JPanel {
                     try {
                         Post post = null;
                         
-                        // Use YouTubeCrawler for YouTube URLs
                         YouTubeCrawler youtubeCrawler = new YouTubeCrawler();
                         youtubeCrawler.initialize();
                         post = youtubeCrawler.crawlVideoByUrl(postUrl);
                         youtubeCrawler.shutdown();
                         
                         if (post != null) {
-                            // Set the disaster type
+
                             if (post instanceof YouTubePost) {
                                 ((YouTubePost) post).setDisasterType(selectedDisaster);
                             }
@@ -470,7 +428,6 @@ public class CrawlControlPanel extends JPanel {
                             model.addPost(post);
                             successCount++;
                             
-                            // Update progress
                             int progress = (int) ((i + 1.0) / validUrls.size() * 100);
                             progressBar.setIndeterminate(false);
                             progressBar.setValue(progress);
@@ -484,7 +441,6 @@ public class CrawlControlPanel extends JPanel {
                     }
                 }
 
-                // Display summary
                 crawlResultsArea.append("\n" + "=".repeat(60) + "\n");
                 crawlResultsArea.append("📊 CRAWL SUMMARY\n");
                 crawlResultsArea.append("Platform: YouTube\n");
@@ -500,7 +456,6 @@ public class CrawlControlPanel extends JPanel {
                 progressBar.setValue(100);
                 statusLabel.setText("✓ Crawl completed: " + successCount + " posts, " + failCount + " failed");
 
-                // Display detailed results
                 if (!allPosts.isEmpty()) {
                     updateCrawlResults(allPosts);
                 }
@@ -570,7 +525,6 @@ public class CrawlControlPanel extends JPanel {
         try {
             statusLabel.setText("Loading sample data...");
             
-            // Create sample posts
             List<Post> samplePosts = new ArrayList<>();
             String[] sampleTopics = {"#yagi", "#bualoi", "#matmo"};
             ReliefItem.Category[] categories = ReliefItem.Category.values();
@@ -592,7 +546,6 @@ public class CrawlControlPanel extends JPanel {
                 post.setSentiment(new Sentiment(sentiment, 0.8 + Math.random() * 0.2, post.getContent()));
                 post.setReliefItem(reliefItem);
 
-                // Add comments
                 for (int c = 0; c < 8; c++) {
                     Comment comment = new Comment(
                         "COMMENT_" + p + "_" + c,
@@ -611,12 +564,10 @@ public class CrawlControlPanel extends JPanel {
                 samplePosts.add(post);
             }
 
-            // Add to model
             for (Post post : samplePosts) {
                 model.addPost(post);
             }
 
-            // Update results
             updateCrawlResults(samplePosts);
             statusLabel.setText("✓ Sample data loaded successfully!");
             crawlResultsArea.insert("✓ Loaded 5 sample posts with 8 comments each\n", 0);
@@ -626,9 +577,6 @@ public class CrawlControlPanel extends JPanel {
         }
     }
 
-    /**
-     * Update the disaster type combo box with available disaster types
-     */
     private void updateDisasterTypeCombo() {
         disasterTypeCombo.removeAllItems();
         
@@ -637,15 +585,11 @@ public class CrawlControlPanel extends JPanel {
             disasterTypeCombo.addItem(name);
         }
         
-        // Set default to "yagi"
         if (disasterNames.contains("yagi")) {
             disasterTypeCombo.setSelectedItem("yagi");
         }
     }
 
-    /**
-     * Show dialog to add a new disaster type
-     */
     private void showAddDisasterDialog() {
         JDialog dialog = new JDialog();
         dialog.setTitle("Add New Disaster Type");
@@ -658,14 +602,12 @@ public class CrawlControlPanel extends JPanel {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        // Disaster type name input
         panel.add(new JLabel("Disaster Type Name:"));
         JTextField nameField = new JTextField();
         nameField.setMaximumSize(new Dimension(350, 30));
         panel.add(nameField);
         panel.add(Box.createVerticalStrut(10));
 
-        // Description of keywords/aliases
         panel.add(new JLabel("Keywords/Aliases (comma-separated):"));
         JTextArea aliasesArea = new JTextArea(3, 40);
         aliasesArea.setLineWrap(true);
@@ -675,7 +617,6 @@ public class CrawlControlPanel extends JPanel {
         panel.add(scrollPane);
         panel.add(Box.createVerticalStrut(10));
 
-        // Buttons
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.X_AXIS));
 
@@ -689,10 +630,8 @@ public class CrawlControlPanel extends JPanel {
                 return;
             }
 
-            // Create and add new disaster type
             DisasterType newDisaster = DisasterManager.getInstance().getOrCreateDisasterType(name);
             
-            // Add aliases
             if (!aliases.isEmpty()) {
                 String[] aliasArray = aliases.split(",");
                 for (String alias : aliasArray) {
@@ -700,7 +639,6 @@ public class CrawlControlPanel extends JPanel {
                 }
             }
 
-            // Update combo box and select the new disaster
             updateDisasterTypeCombo();
             disasterTypeCombo.setSelectedItem(name);
 
@@ -720,13 +658,8 @@ public class CrawlControlPanel extends JPanel {
         dialog.setVisible(true);
     }
 
-    /**
-     * Find the appropriate disaster type for a post based on keywords used
-     */
     @SuppressWarnings("unused")
-    /**
-     * Reset the database by deleting the old file and creating a new empty one
-     */
+    
     private void resetDatabase() {
         int confirm = JOptionPane.showConfirmDialog(
             this,
@@ -738,26 +671,19 @@ public class CrawlControlPanel extends JPanel {
 
         if (confirm == JOptionPane.YES_OPTION) {
             try {
-                // CRITICAL: Close ALL active database connections first
-                // This releases locks on the database file so we can delete it
-                System.out.println("DEBUG: Closing all active database connections...");
+
                 try {
-                    // If Model is holding a DatabaseManager instance, close it
+
                     DatabaseManager tempManager = new DatabaseManager();
                     tempManager.close();
-                    System.out.println("DEBUG: Closed temporary DatabaseManager");
                 } catch (Exception e) {
-                    System.out.println("DEBUG: No active connections to close: " + e.getMessage());
                 }
                 
-                // Give database time to fully release locks
                 Thread.sleep(300);
                 
-                // Use relative path so it works on any machine
                 File dbFile = new File("humanitarian_logistics_user.db");
                 String dbPath = dbFile.getAbsolutePath();
                 
-                // CRITICAL: Delete ALL database-related files to ensure complete reset
                 if (dbFile.exists()) {
                     if (!dbFile.delete()) {
                         throw new Exception("Failed to delete old database file");
@@ -765,7 +691,6 @@ public class CrawlControlPanel extends JPanel {
                     System.out.println("Deleted main DB file: " + dbPath);
                 }
                 
-                // Delete ALL WAL (Write-Ahead Log) and journal files
                 File walFile = new File(dbPath + "-wal");
                 if (walFile.exists()) {
                     walFile.delete();
@@ -784,10 +709,8 @@ public class CrawlControlPanel extends JPanel {
                     System.out.println("Deleted journal file: " + dbPath + "-journal");
                 }
                 
-                // Give the filesystem a moment to fully release the files
                 Thread.sleep(200);
 
-                // Create new empty database with proper schema
                 try {
                     Class.forName("org.sqlite.JDBC");
                     java.sql.Connection conn = java.sql.DriverManager.getConnection(
@@ -796,10 +719,8 @@ public class CrawlControlPanel extends JPanel {
                     conn.setAutoCommit(false);
                     try (java.sql.Statement stmt = conn.createStatement()) {
                         
-                        // Enable foreign keys
                         stmt.execute("PRAGMA foreign_keys = ON");
                         
-                        // Create posts table
                         stmt.execute("CREATE TABLE IF NOT EXISTS posts (" +
                             "post_id INTEGER PRIMARY KEY, " +
                             "title TEXT NOT NULL, " +
@@ -809,7 +730,6 @@ public class CrawlControlPanel extends JPanel {
                             "source TEXT" +
                             ")");
                         
-                        // Create comments table with foreign key
                         stmt.execute("CREATE TABLE IF NOT EXISTS comments (" +
                             "comment_id INTEGER PRIMARY KEY, " +
                             "post_id INTEGER NOT NULL, " +
@@ -831,12 +751,9 @@ public class CrawlControlPanel extends JPanel {
                         crawlResultsArea.append("✓ WAL/SHM/Journal files cleaned\n");
                         crawlResultsArea.append("✓ New empty database created with fresh schema\n");
                         
-                        // Clear model data AFTER database is recreated
                         model.clearPosts();
                         
-                        // CRITICAL: Reset Model's DatabaseManager instance to force new connection
                         model.resetDatabaseConnection();
-                        System.out.println("DEBUG: Model database connection reset");
                         
                         JOptionPane.showMessageDialog(
                             this,

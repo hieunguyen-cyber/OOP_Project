@@ -7,17 +7,9 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.logging.Logger;
 
-/**
- * Utility class for common crawling operations.
- * Shared logic between CrawlControlPanel and other crawling components.
- * (humanitarian-logistics version - adds posts to Model, not SessionDataBuffer)
- */
 public class CrawlingUtility {
     private static final Logger LOGGER = Logger.getLogger(CrawlingUtility.class.getName());
     
-    /**
-     * Add comments to a post using predefined templates
-     */
     public static void addCommentsToPost(Post post, int commentLimit) {
         String[] commentTemplates = {
             "The relief distribution was well organized",
@@ -43,7 +35,6 @@ public class CrawlingUtility {
                 "User_" + (i + 1)
             );
 
-            // Random sentiment
             Sentiment.SentimentType type = Math.random() > 0.5 ?
                 (Math.random() > 0.5 ? Sentiment.SentimentType.POSITIVE : Sentiment.SentimentType.NEGATIVE)
                 : Sentiment.SentimentType.NEUTRAL;
@@ -55,13 +46,9 @@ public class CrawlingUtility {
         }
     }
     
-    /**
-     * Find appropriate disaster type for post based on keywords
-     */
     public static DisasterType findDisasterTypeForPost(Post post, List<String> keywords) {
         DisasterManager manager = DisasterManager.getInstance();
         
-        // Try to find a matching disaster type from the keywords
         for (String keyword : keywords) {
             DisasterType disaster = manager.findDisasterType(keyword);
             if (disaster != null) {
@@ -69,13 +56,9 @@ public class CrawlingUtility {
             }
         }
         
-        // Default to "yagi" if no match found
         return manager.getDisasterType("yagi");
     }
     
-    /**
-     * Validate and clean URLs
-     */
     public static List<String> validateAndCleanUrls(String urlText, String platformType) {
         List<String> validUrls = new ArrayList<>();
         
@@ -91,13 +74,12 @@ public class CrawlingUtility {
                 continue;
             }
             
-            // Platform-specific URL validation
             if ("YOUTUBE".equals(platformType)) {
                 if (cleanUrl.contains("youtube.com") || cleanUrl.contains("youtu.be")) {
                     validUrls.add(cleanUrl);
                 }
             } else {
-                // Default: accept any URL with http/https
+
                 if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
                     validUrls.add(cleanUrl);
                 }

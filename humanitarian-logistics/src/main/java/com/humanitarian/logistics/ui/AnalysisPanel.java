@@ -13,11 +13,6 @@ import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Advanced Analysis Panel with Problem 1 and Problem 2 visualizations.
- * Problem 1: Satisfaction analysis per relief category
- * Problem 2: Temporal sentiment tracking and trend analysis
- */
 public class AnalysisPanel extends JPanel {
     private final Model model;
     private JTabbedPane tabbedPane;
@@ -40,18 +35,14 @@ public class AnalysisPanel extends JPanel {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createTitledBorder("Advanced Analysis - Problem 1 & 2"));
 
-        // Create tabbed pane with per-tab disaster selectors
         tabbedPane = new JTabbedPane();
 
-        // Problem 1 Tab
         JPanel problem1Panel = createProblem1Panel();
         tabbedPane.addTab("Problem 1: Satisfaction Analysis", problem1Panel);
 
-        // Problem 2 Tab
         JPanel problem2Panel = createProblem2Panel();
         tabbedPane.addTab("Problem 2: Temporal Sentiment Tracking", problem2Panel);
 
-        // Comparison Tab
         JPanel comparisonPanel = createComparisonPanel();
         tabbedPane.addTab("Overall Comparison", comparisonPanel);
 
@@ -63,7 +54,6 @@ public class AnalysisPanel extends JPanel {
         panel.setLayout(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Top: Disaster selector for this tab
         JPanel selectorPanel = new JPanel();
         selectorPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
         selectorPanel.setBorder(BorderFactory.createTitledBorder("Disaster Type"));
@@ -71,7 +61,6 @@ public class AnalysisPanel extends JPanel {
         problem1DisasterCombo = new JComboBox<>();
         problem1DisasterCombo.addItem("All Disasters");
         List<String> disasterNames = DisasterManager.getInstance().getAllDisasterNames();
-        System.out.println("DEBUG: Problem1 loaded " + disasterNames.size() + " disaster names: " + disasterNames);
         for (String name : disasterNames) {
             problem1DisasterCombo.addItem(name);
         }
@@ -84,16 +73,13 @@ public class AnalysisPanel extends JPanel {
         selectorPanel.add(analyzeBtn);
         panel.add(selectorPanel, BorderLayout.NORTH);
 
-        // Center: Chart and Results
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(new BorderLayout(10, 10));
         
-        // Chart
         problem1ChartPanel = new ChartPanel(null);
         problem1ChartPanel.setPreferredSize(new Dimension(600, 300));
         contentPanel.add(problem1ChartPanel, BorderLayout.NORTH);
         
-        // Results
         problem1ResultsArea = new JTextArea(10, 50);
         problem1ResultsArea.setEditable(false);
         problem1ResultsArea.setFont(new Font("Monospaced", Font.PLAIN, 10));
@@ -110,7 +96,6 @@ public class AnalysisPanel extends JPanel {
         panel.setLayout(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Top: Disaster selector for this tab
         JPanel selectorPanel = new JPanel();
         selectorPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
         selectorPanel.setBorder(BorderFactory.createTitledBorder("Disaster Type"));
@@ -130,21 +115,17 @@ public class AnalysisPanel extends JPanel {
         selectorPanel.add(analyzeBtn);
         panel.add(selectorPanel, BorderLayout.NORTH);
 
-        // Center: Charts and Results
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         
-        // Trend Chart
         trendChartPanel = new ChartPanel(null);
         trendChartPanel.setPreferredSize(new Dimension(600, 250));
         contentPanel.add(trendChartPanel);
 
-        // Time Series Chart
         problem2ChartPanel = new ChartPanel(null);
         problem2ChartPanel.setPreferredSize(new Dimension(600, 250));
         contentPanel.add(problem2ChartPanel);
         
-        // Results
         problem2ResultsArea = new JTextArea(8, 50);
         problem2ResultsArea.setEditable(false);
         problem2ResultsArea.setFont(new Font("Monospaced", Font.PLAIN, 10));
@@ -161,7 +142,6 @@ public class AnalysisPanel extends JPanel {
         panel.setLayout(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Top: Disaster selector for this tab
         JPanel selectorPanel = new JPanel();
         selectorPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
         selectorPanel.setBorder(BorderFactory.createTitledBorder("Disaster Type"));
@@ -181,7 +161,6 @@ public class AnalysisPanel extends JPanel {
         selectorPanel.add(analyzeBtn);
         panel.add(selectorPanel, BorderLayout.NORTH);
 
-        // Center: Results area
         comparisonResultsArea = new JTextArea(30, 60);
         comparisonResultsArea.setEditable(false);
         comparisonResultsArea.setFont(new Font("Monospaced", Font.PLAIN, 10));
@@ -199,7 +178,6 @@ public class AnalysisPanel extends JPanel {
                 return;
             }
 
-            // Problem 1: Satisfaction Analysis per Relief Category
             StringBuilder results = new StringBuilder();
             results.append("=== PROBLEM 1: PUBLIC SATISFACTION ANALYSIS ===\n");
             
@@ -210,12 +188,10 @@ public class AnalysisPanel extends JPanel {
             
             results.append("Determining public satisfaction/dissatisfaction per relief item\n\n");
 
-            // Group by relief category
             Map<ReliefItem.Category, List<Post>> byCategory = posts.stream()
                 .filter(p -> p.getReliefItem() != null)
                 .collect(Collectors.groupingBy(p -> p.getReliefItem().getCategory()));
 
-            // Create dataset for chart
             DefaultCategoryDataset dataset = new DefaultCategoryDataset();
 
             byCategory.forEach((category, categoryPosts) -> {
@@ -247,7 +223,6 @@ public class AnalysisPanel extends JPanel {
                 }
                 results.append("\n");
 
-                // Add to dataset
                 dataset.addValue(positivePercent, "Positive", category.getDisplayName());
                 dataset.addValue(negativePercent, "Negative", category.getDisplayName());
                 dataset.addValue(neutralPercent, "Neutral", category.getDisplayName());
@@ -255,7 +230,6 @@ public class AnalysisPanel extends JPanel {
 
             problem1ResultsArea.setText(results.toString());
 
-            // Create and display chart
             JFreeChart chart = ChartFactory.createStackedBarChart(
                 "Public Satisfaction by Relief Category (Problem 1)",
                 "Relief Category",
@@ -287,7 +261,6 @@ public class AnalysisPanel extends JPanel {
             
             results.append("Analyzing sentiment evolution over time per relief item\n\n");
 
-            // Group by time buckets (6-hour intervals)
             Map<String, List<Post>> byTimeBucket = posts.stream()
                 .collect(Collectors.groupingBy(p -> {
                     LocalDateTime dt = p.getCreatedAt();
@@ -296,7 +269,6 @@ public class AnalysisPanel extends JPanel {
                     return String.format("%02d:00-%02d:59", bucket * 6, (bucket + 1) * 6 - 1);
                 }));
 
-            // Create dataset for time series chart
             DefaultCategoryDataset timeDataset = new DefaultCategoryDataset();
             DefaultCategoryDataset trendDataset = new DefaultCategoryDataset();
 
@@ -325,7 +297,6 @@ public class AnalysisPanel extends JPanel {
                         bucketPosts.size(), positive, negative, neutral));
                 });
 
-            // Detect trends per category
             results.append("\n--- TREND ANALYSIS BY CATEGORY ---\n");
             Map<ReliefItem.Category, List<Post>> byCategory = posts.stream()
                 .filter(p -> p.getReliefItem() != null)
@@ -346,7 +317,6 @@ public class AnalysisPanel extends JPanel {
 
             problem2ResultsArea.setText(results.toString());
 
-            // Create charts
             JFreeChart timeChart = ChartFactory.createStackedBarChart(
                 "Sentiment Distribution Over Time (Problem 2)",
                 "Time Period",
@@ -462,18 +432,13 @@ public class AnalysisPanel extends JPanel {
         }
     }
 
-    /**
-     * Get posts filtered by the selected disaster type
-     */
     private List<Post> getFilteredPosts(String disasterName) {
         List<Post> allPosts = model.getPosts();
         
-        // If "All Disasters" is selected, return all posts
         if (disasterName == null || disasterName.equals("All Disasters")) {
             return allPosts;
         }
         
-        // Filter posts by disaster type
         return allPosts.stream()
             .filter(p -> {
                 if (p instanceof YouTubePost) {

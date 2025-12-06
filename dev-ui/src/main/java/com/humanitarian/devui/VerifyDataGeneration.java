@@ -4,10 +4,6 @@ import com.humanitarian.devui.model.*;
 import com.humanitarian.devui.database.DataPersistenceManager;
 import java.util.*;
 
-/**
- * Utility to verify that sample data generation properly populated sentiment and category values.
- * Run with: mvn exec:java -Dexec.mainClass="com.humanitarian.devui.VerifyDataGeneration"
- */
 public class VerifyDataGeneration {
     public static void main(String[] args) {
         System.out.println("=== Verifying Sample Data Generation ===\n");
@@ -23,14 +19,12 @@ public class VerifyDataGeneration {
         
         System.out.println("✓ Loaded " + posts.size() + " posts\n");
         
-        // Statistics
         int postsWithSentiment = 0;
         int postsWithCategory = 0;
         int totalComments = 0;
         int commentsWithSentiment = 0;
         int commentsWithCategory = 0;
         
-        // Sample first 3 posts
         for (int i = 0; i < Math.min(3, posts.size()); i++) {
             Post post = posts.get(i);
             
@@ -42,7 +36,6 @@ public class VerifyDataGeneration {
                 ? post.getContent().substring(0, 70) + "..." 
                 : post.getContent()));
             
-            // Check sentiment
             if (post.getSentiment() != null) {
                 System.out.println("✓ Sentiment: " + post.getSentiment().getType() + 
                     " (confidence: " + String.format("%.2f", post.getSentiment().getConfidence()) + ")");
@@ -51,7 +44,6 @@ public class VerifyDataGeneration {
                 System.out.println("❌ Sentiment: NULL");
             }
             
-            // Check relief category
             if (post.getReliefItem() != null) {
                 System.out.println("✓ Category: " + post.getReliefItem().getCategory());
                 postsWithCategory++;
@@ -59,7 +51,6 @@ public class VerifyDataGeneration {
                 System.out.println("❌ Category: NULL");
             }
             
-            // Check comments
             if (post.getComments() != null && !post.getComments().isEmpty()) {
                 System.out.println("\nComments (" + post.getComments().size() + " total):");
                 
@@ -72,7 +63,6 @@ public class VerifyDataGeneration {
                         ? comment.getContent().substring(0, 60) + "..."
                         : comment.getContent()));
                     
-                    // Check sentiment
                     if (comment.getSentiment() != null) {
                         System.out.println("  ✓ Sentiment: " + comment.getSentiment().getType() + 
                             " (confidence: " + String.format("%.2f", comment.getSentiment().getConfidence()) + ")");
@@ -81,7 +71,6 @@ public class VerifyDataGeneration {
                         System.out.println("  ❌ Sentiment: NULL");
                     }
                     
-                    // Check relief category
                     if (comment.getReliefItem() != null) {
                         System.out.println("  ✓ Category: " + comment.getReliefItem().getCategory());
                         commentsWithCategory++;
@@ -93,10 +82,8 @@ public class VerifyDataGeneration {
                 System.out.println("\nComments: None");
             }
             
-            System.out.println();
         }
         
-        // Overall statistics
         System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         System.out.println("📊 OVERALL STATISTICS");
         System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -112,7 +99,6 @@ public class VerifyDataGeneration {
                 " (" + String.format("%.1f", 100.0 * commentsWithCategory / totalComments) + "%)");
         }
         
-        System.out.println();
         if (postsWithSentiment == posts.size() && postsWithCategory == posts.size() &&
             totalComments == commentsWithSentiment && totalComments == commentsWithCategory) {
             System.out.println("✅ Sample data generation is WORKING CORRECTLY!");

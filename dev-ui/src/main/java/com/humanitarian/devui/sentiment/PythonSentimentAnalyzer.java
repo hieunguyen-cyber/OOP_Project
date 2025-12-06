@@ -10,10 +10,6 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
-/**
- * Sentiment analyzer that communicates with Python API.
- * Demonstrates the abstraction of Python sentiment analysis for Java consumers.
- */
 public class PythonSentimentAnalyzer implements SentimentAnalyzer {
     private final String apiUrl;
     private final String modelName;
@@ -71,13 +67,11 @@ public class PythonSentimentAnalyzer implements SentimentAnalyzer {
 
                 JSONObject responseJson = new JSONObject(responseText);
                 
-                // Check for error in response
                 if (responseJson.has("error")) {
                     System.err.println("✗ Error analyzing sentiment: " + responseJson.getString("error"));
                     return new Sentiment(Sentiment.SentimentType.NEUTRAL, 0.5, text);
                 }
 
-                // Check if sentiment field exists
                 if (!responseJson.has("sentiment")) {
                     System.err.println("✗ Error analyzing sentiment: Response missing 'sentiment' field");
                     System.err.println("  Response: " + responseText);
@@ -94,7 +88,7 @@ public class PythonSentimentAnalyzer implements SentimentAnalyzer {
         } catch (Exception e) {
             System.err.println("✗ Error analyzing sentiment: " + e.getMessage());
             e.printStackTrace();
-            // Return neutral sentiment on error
+
             return new Sentiment(Sentiment.SentimentType.NEUTRAL, 0.5, text);
         }
     }
@@ -130,7 +124,7 @@ public class PythonSentimentAnalyzer implements SentimentAnalyzer {
     }
 
     public void setApiUrl(String newUrl) {
-        // Support for changing API URL at runtime
+
         String oldUrl = this.apiUrl;
         System.out.println("Changing API URL from " + oldUrl + " to " + newUrl);
     }

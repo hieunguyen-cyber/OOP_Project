@@ -11,12 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 
-/**
- * YouTube Official API v3 Helper
- * Provides alternative to HTTP scraping using official YouTube API
- * Logic reused from YoutubeDataCrawler project
- * Uses OkHttp + GSON for JSON parsing (same as YoutubeDataCrawler)
- */
 public class YouTubeAPIHelper {
     private final String apiKey;
     private static final String API_BASE = "https://www.googleapis.com/youtube/v3";
@@ -25,10 +19,6 @@ public class YouTubeAPIHelper {
         this.apiKey = apiKey;
     }
 
-    /**
-     * Search videos by keyword using official API
-     * Logic reused from YoutubeDataCrawler.YouTubeSearch
-     */
     public List<String> searchVideos(String query, int maxResults) throws Exception {
         OkHttpClient client = new OkHttpClient();
         List<String> videoIds = new ArrayList<>();
@@ -57,7 +47,7 @@ public class YouTubeAPIHelper {
                                     .getAsString();
                             videoIds.add(videoId);
                         } catch (Exception e) {
-                            // Skip invalid entries
+
                         }
                     }
                 }
@@ -67,10 +57,6 @@ public class YouTubeAPIHelper {
         return videoIds;
     }
 
-    /**
-     * Get comments for a video using official API
-     * Logic reused from YoutubeDataCrawler.YouTubeCommentCrawler
-     */
     public List<Comment> getComments(String videoId) throws Exception {
         OkHttpClient client = new OkHttpClient();
         List<Comment> comments = new ArrayList<>();
@@ -110,7 +96,6 @@ public class YouTubeAPIHelper {
                             String text = snippet.get("textOriginal").getAsString();
                             String publishedAt = snippet.get("publishedAt").getAsString();
 
-                            // Parse ISO date
                             LocalDateTime createdAt = parseISO8601(publishedAt);
                             
                             Comment comment = new Comment(
@@ -122,12 +107,11 @@ public class YouTubeAPIHelper {
                             );
                             comments.add(comment);
                         } catch (Exception e) {
-                            // Skip invalid entries
+
                         }
                     }
                 }
 
-                // Check for next page
                 if (json.has("nextPageToken")) {
                     pageToken = json.get("nextPageToken").getAsString();
                 } else {
@@ -139,9 +123,6 @@ public class YouTubeAPIHelper {
         return comments;
     }
 
-    /**
-     * Get video details (title, published date) using official API
-     */
     public JsonObject getVideoDetails(String videoId) throws Exception {
         OkHttpClient client = new OkHttpClient();
 
@@ -166,12 +147,9 @@ public class YouTubeAPIHelper {
         return null;
     }
 
-    /**
-     * Parse ISO 8601 date format (2024-12-01T10:30:00Z)
-     */
     private LocalDateTime parseISO8601(String dateStr) {
         try {
-            // Remove 'Z' and replace with +00:00 for parsing
+
             dateStr = dateStr.replace("Z", "+00:00");
             
             return java.time.OffsetDateTime.parse(dateStr).toLocalDateTime();
@@ -181,9 +159,6 @@ public class YouTubeAPIHelper {
         }
     }
 
-    /**
-     * Check if API key is valid and accessible
-     */
     public boolean isAPIKeyValid() {
         if (apiKey == null || apiKey.isEmpty()) {
             return false;

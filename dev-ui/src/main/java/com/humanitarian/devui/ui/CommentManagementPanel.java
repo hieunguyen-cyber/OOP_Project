@@ -8,10 +8,6 @@ import java.awt.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-/**
- * Excel-style table panel for managing comments.
- * Allows users to view, edit, and manage individual comments.
- */
 public class CommentManagementPanel extends JPanel implements ModelListener {
     private final Model model;
     private DatabaseManager dbManager;
@@ -29,7 +25,7 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
             System.err.println("Error initializing DatabaseManager: " + e.getMessage());
             this.dbManager = null;
         }
-        // Register as model listener to get notified of changes
+
         model.addModelListener(this);
         initializeUI();
     }
@@ -38,15 +34,12 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createTitledBorder("💬 Comment Management - Excel Style"));
 
-        // Top: Statistics + Refresh button
         JPanel statsPanel = createStatsPanel();
         add(statsPanel, BorderLayout.NORTH);
 
-        // Middle: Table and Details
         JPanel mainPanel = createMainPanel();
         add(mainPanel, BorderLayout.CENTER);
 
-        // Bottom: Status
         statusLabel = new JLabel("Ready - Select a comment to view details");
         statusLabel.setFont(new Font("Arial", Font.PLAIN, 11));
         add(statusLabel, BorderLayout.SOUTH);
@@ -63,7 +56,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
 
         panel.add(totalLabel);
         
-        // Refresh button
         JButton refreshBtn = new JButton("🔄 Refresh");
         refreshBtn.setFont(new Font("Arial", Font.PLAIN, 10));
         refreshBtn.addActionListener(e -> {
@@ -86,12 +78,11 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout(10, 10));
 
-        // Table
         String[] columns = {"Comment ID", "Author", "Posted At", "Sentiment", "Content Preview"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false; // Editing via details panel
+                return false;
             }
         };
 
@@ -110,7 +101,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         tableScroll.setPreferredSize(new Dimension(0, 300));
         panel.add(tableScroll, BorderLayout.CENTER);
 
-        // Details panel
         JPanel detailsPanel = createDetailsPanel();
         panel.add(detailsPanel, BorderLayout.SOUTH);
 
@@ -131,7 +121,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         JScrollPane scroll = new JScrollPane(detailsArea);
         panel.add(scroll, BorderLayout.CENTER);
 
-        // Action buttons
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 8, 5));
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
@@ -174,7 +163,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
     public void refreshTable() {
         tableModel.setRowCount(0);
 
-        // Add comments from all posts
         for (Post post : model.getPosts()) {
             for (Comment comment : post.getComments()) {
                 addCommentRow(comment);
@@ -248,7 +236,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
             return;
         }
 
-        // Find comment and its post
         Comment commentToDelete = null;
         Post parentPost = null;
         int count = 0;
@@ -281,17 +268,15 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         
         if (confirm == JOptionPane.YES_OPTION) {
             try {
-                // Remove from model
+
                 if (parentPost != null) {
                     parentPost.removeComment(commentToDelete.getCommentId());
                 }
                 
-                // Delete from database
                 if (dbManager != null) {
                     dbManager.deleteComment(commentToDelete.getCommentId());
                 }
                 
-                // Refresh UI
                 refreshTable();
                 detailsArea.setText("");
                 statusLabel.setText("✓ Comment deleted and saved to database");
@@ -310,7 +295,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
             return;
         }
 
-        // Find comment and its post
         Comment commentToEdit = null;
         Post parentPost = null;
         int count = 0;
@@ -347,7 +331,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        // Content
         panel.add(new JLabel("Comment Content:"));
         JTextArea contentArea = new JTextArea(5, 50);
         contentArea.setText(comment.getContent());
@@ -357,7 +340,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         panel.add(new JScrollPane(contentArea));
         panel.add(Box.createVerticalStrut(10));
 
-        // Sentiment
         panel.add(new JLabel("Sentiment:"));
         JComboBox<Sentiment.SentimentType> sentimentCombo = new JComboBox<>(Sentiment.SentimentType.values());
         sentimentCombo.setSelectedItem(comment.getSentiment().getType());
@@ -365,7 +347,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         panel.add(sentimentCombo);
         panel.add(Box.createVerticalStrut(10));
 
-        // Confidence
         panel.add(new JLabel("Confidence (0.0 - 1.0):"));
         JSpinner confidenceSpinner = new JSpinner(new SpinnerNumberModel(
             comment.getSentiment().getConfidence(), 0.0, 1.0, 0.1
@@ -373,7 +354,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         panel.add(confidenceSpinner);
         panel.add(Box.createVerticalGlue());
 
-        // Buttons
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 10, 5));
 
@@ -393,7 +373,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
                 Sentiment.SentimentType newType = (Sentiment.SentimentType) sentimentCombo.getSelectedItem();
                 double newConfidence = ((Number) confidenceSpinner.getValue()).doubleValue();
                 
-                // Create updated comment
                 Sentiment newSentiment = new Sentiment(newType, newConfidence, newContent);
                 Comment updatedComment = new Comment(
                     comment.getCommentId(),
@@ -407,17 +386,14 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
                     updatedComment.setReliefItem(comment.getReliefItem());
                 }
                 
-                // Update in model
                 if (parentPost != null) {
                     parentPost.updateComment(updatedComment);
                 }
                 
-                // Update in database
                 if (dbManager != null) {
                     dbManager.updateComment(updatedComment);
                 }
                 
-                // Refresh UI
                 refreshTable();
                 dialog.dispose();
                 statusLabel.setText("✓ Comment updated and saved to database");
@@ -440,9 +416,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         dialog.setVisible(true);
     }
 
-    /**
-     * Clear and refresh the comment table after database reset
-     */
     public void clearAndRefresh() {
         tableModel.setRowCount(0);
         detailsArea.setText("");
@@ -450,9 +423,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         totalLabel.setText("Total: 0 comments");
     }
 
-    /**
-     * Called when model changes (e.g., after database reset)
-     */
     @Override
     public void modelChanged() {
         refreshTable();

@@ -18,10 +18,9 @@ build/
 *.iml
 
 # Database files
-*.db
 *.sqlite
 *.sqlite3
-
+humanitarian-logistics/humanitarian_logistics_user.db
 # Data directories (persistence files)
 dev-ui/data/
 humanitarian-logistics/data/

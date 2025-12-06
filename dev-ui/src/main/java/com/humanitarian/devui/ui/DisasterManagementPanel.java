@@ -7,10 +7,6 @@ import java.awt.*;
 import java.util.List;
 import java.util.*;
 
-/**
- * Panel for managing disaster types and their associated comments.
- * Allows users to add/remove disaster types and manage related data.
- */
 public class DisasterManagementPanel extends JPanel {
     private Model model;
     private JTable disasterTable;
@@ -28,15 +24,12 @@ public class DisasterManagementPanel extends JPanel {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createTitledBorder("⚠️ Disaster Type Management"));
 
-        // Left: Disaster list
         JPanel leftPanel = createDisasterListPanel();
         add(leftPanel, BorderLayout.WEST);
 
-        // Center: Actions and info
         JPanel centerPanel = createActionPanel();
         add(centerPanel, BorderLayout.CENTER);
 
-        // Bottom: Status
         statusLabel = new JLabel("Ready to manage disaster types");
         add(statusLabel, BorderLayout.SOUTH);
     }
@@ -47,15 +40,13 @@ public class DisasterManagementPanel extends JPanel {
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         panel.setPreferredSize(new Dimension(400, 0));
 
-        // Title
         panel.add(new JLabel("Available Disaster Types:"), BorderLayout.NORTH);
 
-        // Table with disaster types
         String[] columnNames = {"Disaster Type", "Comment Count"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false; // Read-only
+                return false;
             }
         };
         disasterTable = new JTable(tableModel);
@@ -66,7 +57,6 @@ public class DisasterManagementPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(disasterTable);
         panel.add(scrollPane, BorderLayout.CENTER);
 
-        // Delete button
         JButton deleteButton = new JButton("🗑️ Delete Selected Disaster");
         deleteButton.setFont(new Font("Arial", Font.BOLD, 11));
         deleteButton.setBackground(new Color(211, 47, 47));
@@ -81,7 +71,6 @@ public class DisasterManagementPanel extends JPanel {
         buttonPanel.add(deleteButton);
         panel.add(buttonPanel, BorderLayout.SOUTH);
 
-        // Refresh on init
         refreshDisasterList();
 
         return panel;
@@ -92,7 +81,6 @@ public class DisasterManagementPanel extends JPanel {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Add new disaster section
         JLabel addLabel = new JLabel("Add New Disaster Type:");
         addLabel.setFont(new Font("Arial", Font.BOLD, 12));
         panel.add(addLabel);
@@ -123,7 +111,6 @@ public class DisasterManagementPanel extends JPanel {
 
         panel.add(Box.createVerticalStrut(20));
 
-        // Reset button
         JButton resetButton = new JButton("🔄 Reset to Default Disasters");
         resetButton.setFont(new Font("Arial", Font.BOLD, 11));
         resetButton.setBackground(new Color(255, 152, 0));
@@ -136,7 +123,6 @@ public class DisasterManagementPanel extends JPanel {
 
         panel.add(Box.createVerticalStrut(20));
 
-        // Info section
         JLabel infoLabel = new JLabel("ℹ️ Information:");
         infoLabel.setFont(new Font("Arial", Font.BOLD, 12));
         panel.add(infoLabel);
@@ -212,7 +198,7 @@ public class DisasterManagementPanel extends JPanel {
 
         if (confirm == JOptionPane.YES_OPTION) {
             try {
-                // Delete all comments associated with this disaster
+
                 List<Post> posts = model.getPosts();
                 int deletedComments = 0;
 
@@ -221,9 +207,8 @@ public class DisasterManagementPanel extends JPanel {
                         YouTubePost ytPost = (YouTubePost) post;
                         DisasterType postDisaster = ytPost.getDisasterType();
                         
-                        // Check if post is tagged with the disaster being deleted
                         if (postDisaster != null && postDisaster.getName().equalsIgnoreCase(disasterName)) {
-                            // Delete all comments from this post
+
                             java.util.List<Comment> comments = ytPost.getComments();
                             int postCommentCount = comments.size();
                             comments.clear();
@@ -232,7 +217,6 @@ public class DisasterManagementPanel extends JPanel {
                     }
                 }
 
-                // Remove the disaster type
                 DisasterManager.getInstance().removeDisasterType(disasterName);
 
                 statusLabel.setText("✓ Deleted '" + disasterName + "' and " + deletedComments + " associated comments");
@@ -268,7 +252,7 @@ public class DisasterManagementPanel extends JPanel {
                 
                 for (String disasterName : allDisasters) {
                     if (!defaultDisasters.contains(disasterName.toLowerCase())) {
-                        // Delete associated comments first
+
                         List<Post> posts = model.getPosts();
                         for (Post post : posts) {
                             if (post instanceof YouTubePost) {
@@ -289,13 +273,11 @@ public class DisasterManagementPanel extends JPanel {
                             }
                         }
                         
-                        // Then remove the disaster
                         DisasterManager.getInstance().removeDisasterType(disasterName);
                         deletedCount++;
                     }
                 }
                 
-                // Save the reset state to persistence (only default disasters will be saved)
                 model.getPersistenceManager().saveDisasters(DisasterManager.getInstance());
                 
                 refreshDisasterList();
@@ -313,13 +295,13 @@ public class DisasterManagementPanel extends JPanel {
     }
 
     public void refreshDisasterList() {
-        tableModel.setRowCount(0); // Clear existing rows
+        tableModel.setRowCount(0);
 
         List<String> disasterNames = DisasterManager.getInstance().getAllDisasterNames();
         List<Post> posts = model.getPosts();
 
         for (String name : disasterNames) {
-            // Count comments associated with this disaster
+
             int commentCount = 0;
             for (Post post : posts) {
                 if (post instanceof YouTubePost) {

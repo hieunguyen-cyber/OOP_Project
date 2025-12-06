@@ -9,10 +9,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-/**
- * Excel-style table panel for managing comments in user app.
- * Allows users to view, edit, and manage individual comments from humanitarian_logistics_user.db
- */
 public class CommentManagementPanel extends JPanel implements ModelListener {
     private final Model model;
     private DatabaseManager dbManager;
@@ -32,7 +28,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         initializeUI();
         refreshTable();
         
-        // Register as model listener to auto-refresh when data changes
         model.addModelListener(this);
     }
     
@@ -45,15 +40,12 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createTitledBorder("💬 Comment Management"));
 
-        // Top: Statistics + Refresh button
         JPanel statsPanel = createStatsPanel();
         add(statsPanel, BorderLayout.NORTH);
 
-        // Middle: Table and Details
         JPanel mainPanel = createMainPanel();
         add(mainPanel, BorderLayout.CENTER);
 
-        // Bottom: Status
         statusLabel = new JLabel("Ready - Select a comment to view details");
         statusLabel.setFont(new Font("Arial", Font.PLAIN, 11));
         add(statusLabel, BorderLayout.SOUTH);
@@ -70,7 +62,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
 
         panel.add(totalLabel);
         
-        // Refresh button
         JButton refreshBtn = new JButton("🔄 Refresh");
         refreshBtn.setFont(new Font("Arial", Font.PLAIN, 10));
         refreshBtn.addActionListener(e -> {
@@ -93,7 +84,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout(10, 10));
 
-        // Table
         String[] columns = {"Comment ID", "Author", "Posted At", "Sentiment", "Content Preview"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -117,7 +107,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         tableScroll.setPreferredSize(new Dimension(0, 300));
         panel.add(tableScroll, BorderLayout.CENTER);
 
-        // Details panel
         JPanel detailsPanel = createDetailsPanel();
         panel.add(detailsPanel, BorderLayout.SOUTH);
 
@@ -138,7 +127,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         JScrollPane scroll = new JScrollPane(detailsArea);
         panel.add(scroll, BorderLayout.CENTER);
 
-        // Action buttons
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 8, 5));
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
@@ -181,7 +169,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
     public void refreshTable() {
         tableModel.setRowCount(0);
 
-        // Add comments from all posts
         for (Post post : model.getPosts()) {
             for (Comment comment : post.getComments()) {
                 addCommentRow(comment);
@@ -255,7 +242,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
             return;
         }
 
-        // Find both comment and parent post in one pass
         Comment commentToDelete = null;
         Post parentPost = null;
         int count = 0;
@@ -285,10 +271,9 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
             
             if (confirm == JOptionPane.YES_OPTION) {
                 try {
-                    // Remove from parent post
+
                     parentPost.removeComment(commentToDelete.getCommentId());
                     
-                    // Remove from database
                     if (dbManager != null) {
                         dbManager.deleteComment(commentToDelete.getCommentId());
                     }
@@ -310,7 +295,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
             return;
         }
 
-        // Find comment and parent post
         Comment commentToEdit = null;
         Post parentPost = null;
         int count = 0;
@@ -340,7 +324,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        // Content
         JLabel contentLabel = new JLabel("Comment Content:");
         contentLabel.setFont(new Font("Arial", Font.BOLD, 11));
         panel.add(contentLabel);
@@ -353,7 +336,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         panel.add(new JScrollPane(contentArea));
         panel.add(Box.createVerticalStrut(10));
 
-        // Sentiment
         JLabel sentimentLabel = new JLabel("Sentiment Type:");
         sentimentLabel.setFont(new Font("Arial", Font.BOLD, 11));
         panel.add(sentimentLabel);
@@ -363,7 +345,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         panel.add(sentimentCombo);
         panel.add(Box.createVerticalStrut(10));
 
-        // Confidence
         JLabel confidenceLabel = new JLabel("Confidence (0.0 - 1.0):");
         confidenceLabel.setFont(new Font("Arial", Font.BOLD, 11));
         panel.add(confidenceLabel);
@@ -372,7 +353,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         panel.add(confidenceSpinner);
         panel.add(Box.createVerticalGlue());
 
-        // Buttons
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 10, 5));
         
@@ -392,7 +372,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
                 Sentiment.SentimentType newType = (Sentiment.SentimentType) sentimentCombo.getSelectedItem();
                 double newConfidence = ((Number) confidenceSpinner.getValue()).doubleValue();
                 
-                // Create updated comment
                 Sentiment newSentiment = new Sentiment(newType, newConfidence, newContent);
                 Comment updatedComment = new Comment(
                     comment.getCommentId(),
@@ -406,10 +385,8 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
                     updatedComment.setReliefItem(comment.getReliefItem());
                 }
                 
-                // Update in parent post
                 parentPost.updateComment(updatedComment);
                 
-                // Update in database
                 if (dbManager != null) {
                     dbManager.updateComment(updatedComment);
                 }

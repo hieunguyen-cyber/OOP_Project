@@ -11,15 +11,9 @@ import org.jfree.data.xy.XYSeriesCollection;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Utility class for creating various chart types for analysis visualization.
- */
 @SuppressWarnings("unchecked")
 public class ChartsUtility {
 
-    /**
-     * Create a pie chart showing sentiment distribution
-     */
     public static JFreeChart createSentimentPieChart(List<Post> posts) {
         DefaultPieDataset<String> dataset = new DefaultPieDataset<>();
 
@@ -40,9 +34,6 @@ public class ChartsUtility {
         return ChartFactory.createPieChart("Sentiment Distribution", dataset);
     }
 
-    /**
-     * Create bar chart for category-wise analysis
-     */
     public static JFreeChart createCategoryBarChart(List<Post> posts) {
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
 
@@ -65,9 +56,6 @@ public class ChartsUtility {
         );
     }
 
-    /**
-     * Create stacked bar chart for sentiment by category
-     */
     public static JFreeChart createStackedSentimentByCategoryChart(List<Post> posts) {
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
 
@@ -97,9 +85,6 @@ public class ChartsUtility {
         );
     }
 
-    /**
-     * Create line chart for sentiment confidence over posts
-     */
     public static JFreeChart createConfidenceTrendChart(List<Post> posts) {
         XYSeriesCollection dataset = new XYSeriesCollection();
         XYSeries positiveSeries = new XYSeries("Positive Confidence");
@@ -131,9 +116,6 @@ public class ChartsUtility {
         );
     }
 
-    /**
-     * Create bar chart for problem 1 analysis
-     */
     public static JFreeChart createProblem1Chart(Map<ReliefItem.Category, Double> satisfactionMap) {
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
 
@@ -149,9 +131,6 @@ public class ChartsUtility {
         );
     }
 
-    /**
-     * Create temporal comparison chart
-     */
     public static JFreeChart createTemporalComparisonChart(Map<String, Integer> sentimentScores) {
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
 
@@ -170,9 +149,6 @@ public class ChartsUtility {
         );
     }
 
-    /**
-     * Create author contribution chart
-     */
     public static JFreeChart createAuthorContributionChart(List<Post> posts) {
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
 
@@ -194,9 +170,6 @@ public class ChartsUtility {
         );
     }
 
-    /**
-     * Create combined analysis chart
-     */
     public static JFreeChart createCombinedAnalysisChart(List<Post> posts) {
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
 
@@ -222,4 +195,3 @@ public class ChartsUtility {
         );
     }
 }
-

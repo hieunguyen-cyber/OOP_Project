@@ -3,9 +3,6 @@ package com.humanitarian.devui.model;
 import java.time.LocalDateTime;
 import java.util.*;
 
-/**
- * Simple data model for Dev UI
- */
 public class DataEntry {
     private String id;
     private String facebookLink;
@@ -22,7 +19,6 @@ public class DataEntry {
         this.createdAt = LocalDateTime.now();
     }
 
-    // Getters & Setters
     public String getId() { return id; }
     public String getFacebookLink() { return facebookLink; }
     public void setFacebookLink(String facebookLink) { this.facebookLink = facebookLink; }

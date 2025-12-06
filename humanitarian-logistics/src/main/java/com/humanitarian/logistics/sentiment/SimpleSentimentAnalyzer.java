@@ -2,10 +2,6 @@ package com.humanitarian.logistics.sentiment;
 
 import com.humanitarian.logistics.model.Sentiment;
 
-/**
- * Mock/Fallback sentiment analyzer for when Python API is unavailable.
- * Demonstrates the Strategy pattern - can be swapped for PythonSentimentAnalyzer.
- */
 public class SimpleSentimentAnalyzer implements SentimentAnalyzer {
     private static final String[] POSITIVE_WORDS = {
             "good", "great", "excellent", "happy", "love", "thank", "thanks",

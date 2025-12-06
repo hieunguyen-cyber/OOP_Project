@@ -5,10 +5,6 @@ import java.sql.*;
 import java.util.*;
 import java.io.File;
 
-/**
- * Database manager for storing and retrieving posts and comments.
- * Demonstrates abstraction and encapsulation of database operations.
- */
 public class DatabaseManager {
     private static DatabaseManager instance;
     private static final Object lock = new Object();
@@ -18,12 +14,9 @@ public class DatabaseManager {
     private boolean initialized = false;
 
     public DatabaseManager() {
-        // Lazy initialization - only connect when needed
+
     }
     
-    /**
-     * Get singleton instance to avoid multiple connections
-     */
     public static DatabaseManager getInstance() {
         if (instance == null) {
             synchronized (lock) {
@@ -39,20 +32,18 @@ public class DatabaseManager {
         String currentDir = System.getProperty("user.dir");
         String basePath;
         
-        // Resolve correct base path - navigate to OOP_Project root first
         File currentFile = new File(currentDir);
         File projectRoot = currentFile;
         
-        // Navigate up to find 'OOP_Project' folder
         while (projectRoot != null && !projectRoot.getName().equals("OOP_Project")) {
             projectRoot = projectRoot.getParentFile();
         }
         
         if (projectRoot != null) {
-            // Found OOP_Project root
+
             basePath = projectRoot.getAbsolutePath() + "/humanitarian-logistics/data";
         } else {
-            // Fallback: try to detect from current directory
+
             if (currentDir.endsWith("humanitarian-logistics")) {
                 basePath = currentDir + "/data";
             } else {
@@ -60,14 +51,12 @@ public class DatabaseManager {
             }
         }
         
-        // Ensure data directory exists
         java.io.File dir = new java.io.File(basePath);
         if (!dir.exists()) {
             dir.mkdirs();
         }
         
         String dbPath = basePath + "/humanitarian_logistics_user.db";
-        System.out.println("DEBUG: DatabaseManager path = " + dbPath);
         return "jdbc:sqlite:" + dbPath;
     }
 
@@ -77,20 +66,17 @@ public class DatabaseManager {
                 Class.forName("org.sqlite.JDBC");
                 dbUrl = getDbUrl();
                 
-                // Close any previous connection
                 if (connection != null && !connection.isClosed()) {
                     try {
                         connection.close();
                     } catch (SQLException e) {
-                        // Ignore
+
                     }
                 }
                 
-                // Add timeout to database URL to prevent lock issues
                 String urlWithTimeout = dbUrl + "?timeout=30000&journal_mode=WAL";
                 connection = DriverManager.getConnection(urlWithTimeout);
                 
-                // Enable foreign keys and WAL mode
                 try (Statement stmt = connection.createStatement()) {
                     stmt.execute("PRAGMA foreign_keys = ON");
                     stmt.execute("PRAGMA journal_mode = WAL");
@@ -104,7 +90,7 @@ public class DatabaseManager {
     }
 
     private void createTables() throws SQLException {
-        // First drop old tables if they have wrong schema
+
         try (Statement stmt = connection.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS posts_old");
             stmt.execute("DROP TABLE IF EXISTS comments_old");
@@ -135,7 +121,6 @@ public class DatabaseManager {
         try (Statement stmt = connection.createStatement()) {
             stmt.execute(postsTable);
             stmt.execute(commentsTable);
-            System.out.println("DEBUG: Tables created/verified");
         }
     }
 
@@ -159,7 +144,6 @@ public class DatabaseManager {
             pstmt.executeUpdate();
         }
 
-        // Save all comments associated with this post
         for (Comment comment : post.getComments()) {
             saveComment(comment);
         }
@@ -270,7 +254,7 @@ public class DatabaseManager {
                     connection.commit();
                 }
             } catch (SQLException e) {
-                // Ignore - connection might be in autocommit mode
+
                 if (!e.getMessage().contains("auto-commit")) {
                     throw e;
                 }
@@ -293,33 +277,24 @@ public class DatabaseManager {
         }
     }
 
-    /**
-     * Reset the DatabaseManager to force reconnection.
-     * CRITICAL: Call this after manually deleting database files to clear cached connections.
-     * Without this, the old connection will be reused and SQLite will recover old data.
-     */
     public void reset() {
-        System.out.println("DEBUG: Resetting DatabaseManager - clearing cached connection");
         try {
-            // Force close the current connection COMPLETELY
+
             if (connection != null) {
                 try {
                     if (!connection.isClosed()) {
                         connection.close();
                     }
                 } catch (SQLException e) {
-                    // Ignore - connection might already be closed
+
                 }
                 connection = null;
             }
-            System.out.println("DEBUG: Closed existing connection");
         } catch (Exception e) {
             System.err.println("Error closing connection during reset: " + e.getMessage());
         }
         
-        // Reset the initialized flag so next call to ensureConnection() will create new connection
         initialized = false;
         dbUrl = null;
-        System.out.println("DEBUG: DatabaseManager reset complete - will reconnect on next operation");
     }
 }

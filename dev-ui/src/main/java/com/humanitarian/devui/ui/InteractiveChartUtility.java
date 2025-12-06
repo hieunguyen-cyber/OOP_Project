@@ -10,31 +10,22 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
-/**
- * Utility for adding interactive features to JFreeChart ChartPanels.
- * Provides enhanced tooltips, zoom, and pan capabilities.
- */
 public class InteractiveChartUtility {
 
-    /**
-     * Add enhanced interactive features to a ChartPanel
-     */
     public static void makeChartInteractive(ChartPanel chartPanel) {
-        // Only enable features if chart is not null
+
         if (chartPanel.getChart() != null) {
             chartPanel.setDomainZoomable(true);
             chartPanel.setRangeZoomable(true);
             chartPanel.setMouseWheelEnabled(true);
         }
         
-        // Enable better tooltips
         chartPanel.setDisplayToolTips(true);
         
-        // Add enhanced mouse listener for tooltips
         chartPanel.addChartMouseListener(new ChartMouseListener() {
             @Override
             public void chartMouseClicked(ChartMouseEvent event) {
-                // On click, show detailed info
+
                 ChartEntity entity = event.getEntity();
                 if (entity != null) {
                     System.out.println("Clicked: " + entity.getToolTipText());
@@ -43,18 +34,14 @@ public class InteractiveChartUtility {
 
             @Override
             public void chartMouseMoved(ChartMouseEvent event) {
-                // Hover feedback is handled by JFreeChart's built-in tooltip
+
             }
         });
         
-        // Set chart panel background and borders for better UI
         chartPanel.setBackground(new Color(245, 245, 245));
         chartPanel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1));
     }
     
-    /**
-     * Enable interactivity on a ChartPanel with an existing chart
-     */
     public static void enableChartInteractivity(ChartPanel chartPanel) {
         if (chartPanel != null && chartPanel.getChart() != null) {
             chartPanel.setDomainZoomable(true);
@@ -63,16 +50,10 @@ public class InteractiveChartUtility {
         }
     }
 
-    /**
-     * Create builder for fluent configuration
-     */
     public static ChartPanelBuilder builder(ChartPanel chartPanel) {
         return new ChartPanelBuilder(chartPanel);
     }
 
-    /**
-     * Fluent builder for ChartPanel configuration
-     */
     public static class ChartPanelBuilder {
         private ChartPanel chartPanel;
         private boolean domainZoom = true;
@@ -113,17 +94,14 @@ public class InteractiveChartUtility {
         }
     }
 
-    /**
-     * Add right-click context menu support
-     */
     public static void addContextMenuSupport(ChartPanel chartPanel) {
-        chartPanel.setPopupMenu(null); // Disable default popup to allow custom
+        chartPanel.setPopupMenu(null);
         
         chartPanel.addMouseListener(new MouseListener() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getButton() == MouseEvent.BUTTON3) {
-                    // Right-click detected
+
                     JPopupMenu menu = createContextMenu(chartPanel);
                     menu.show(chartPanel, e.getX(), e.getY());
                 }
@@ -186,9 +164,6 @@ public class InteractiveChartUtility {
         return menu;
     }
 
-    /**
-     * Enhanced tooltip rendering with additional information
-     */
     public static void enhanceTooltips(ChartPanel chartPanel, java.util.function.Function<ChartEntity, String> tooltipProvider) {
         chartPanel.addChartMouseListener(new ChartMouseListener() {
             @Override
@@ -204,7 +179,7 @@ public class InteractiveChartUtility {
 
             @Override
             public void chartMouseMoved(ChartMouseEvent event) {
-                // Enhanced tooltip on hover
+
             }
         });
     }

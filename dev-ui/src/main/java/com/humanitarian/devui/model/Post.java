@@ -7,10 +7,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Abstract base class for social media posts.
- * Demonstrates abstraction and encapsulation principles.
- */
 public abstract class Post implements Serializable, Comparable<Post> {
     private static final long serialVersionUID = 1L;
 
@@ -18,7 +14,7 @@ public abstract class Post implements Serializable, Comparable<Post> {
     private final String content;
     private final LocalDateTime createdAt;
     private final String author;
-    private final String source; // "FACEBOOK", "TWITTER", "TIKTOK", etc.
+    private final String source;
 
     private Sentiment sentiment;
     private ReliefItem reliefItem;
@@ -35,7 +31,6 @@ public abstract class Post implements Serializable, Comparable<Post> {
         this.comments = new ArrayList<>();
     }
 
-    // Getters
     public String getPostId() {
         return postId;
     }
@@ -72,7 +67,6 @@ public abstract class Post implements Serializable, Comparable<Post> {
         return Collections.unmodifiableList(comments);
     }
 
-    // Setters
     public void setSentiment(Sentiment sentiment) {
         this.sentiment = sentiment;
     }

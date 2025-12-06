@@ -14,9 +14,6 @@ import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Advanced Analysis Panel with detailed visualizations for Problem 1 & 2.
- */
 public class AdvancedAnalysisPanel extends JPanel {
     private Model model;
     private JTabbedPane mainTabs;
@@ -42,14 +39,11 @@ public class AdvancedAnalysisPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         JTabbedPane tabs = new JTabbedPane();
 
-        // === NEW: By Individual Category with Selector ===
         JPanel individualCategoryPanel = new JPanel(new BorderLayout());
         
-        // Create top panel with disaster AND category selectors
         JPanel selectorPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         selectorPanel.setBorder(BorderFactory.createTitledBorder("Select Disaster & Relief Category"));
         
-        // Disaster selector
         JLabel disasterLabel = new JLabel("Disaster Type: ");
         JComboBox<String> disasterSelector = new JComboBox<>();
         disasterSelector.addItem("All Disasters");
@@ -63,7 +57,6 @@ public class AdvancedAnalysisPanel extends JPanel {
         selectorPanel.add(disasterSelector);
         selectorPanel.add(new JLabel("  |  Category: "));
         
-        // Category selector
         JComboBox<String> categorySelector = new JComboBox<>();
         categorySelector.addItem("ALL CATEGORIES");
         for (ReliefItem.Category cat : ReliefItem.Category.values()) {
@@ -71,7 +64,6 @@ public class AdvancedAnalysisPanel extends JPanel {
         }
         selectorPanel.add(categorySelector);
         
-        // Chart and text area
         ChartPanel chartPanel0 = new ChartPanel(null);
         chartPanel0.setPreferredSize(new Dimension(800, 350));
         InteractiveChartUtility.makeChartInteractive(chartPanel0);
@@ -83,11 +75,10 @@ public class AdvancedAnalysisPanel extends JPanel {
         JButton btnAnalyzeCategory = new JButton("Analyze");
         btnAnalyzeCategory.addActionListener(e -> {
             try {
-                // Get selected disaster and category
+
                 String selectedDisaster = (String) disasterSelector.getSelectedItem();
                 String selectedCategory = (String) categorySelector.getSelectedItem();
                 
-                // Filter posts by disaster type first
                 List<Post> posts = model.getPosts();
                 if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
                     posts = posts.stream()
@@ -108,7 +99,7 @@ public class AdvancedAnalysisPanel extends JPanel {
                 DefaultCategoryDataset dataset = new DefaultCategoryDataset();
                 
                 if ("ALL CATEGORIES".equals(selectedCategory)) {
-                    // Show all categories comparison
+
                     Map<ReliefItem.Category, List<Post>> byCategory = posts.stream()
                         .filter(p -> p.getReliefItem() != null)
                         .collect(Collectors.groupingBy(p -> p.getReliefItem().getCategory()));
@@ -154,7 +145,7 @@ public class AdvancedAnalysisPanel extends JPanel {
                     );
                     chartPanel0.setChart(chart);
                 } else {
-                    // Show specific category details
+
                     ReliefItem.Category targetCategory = null;
                     for (ReliefItem.Category cat : ReliefItem.Category.values()) {
                         if (cat.getDisplayName().equals(selectedCategory)) {
@@ -183,7 +174,6 @@ public class AdvancedAnalysisPanel extends JPanel {
                         double neuPct = total > 0 ? (double) neutral / total * 100 : 0;
                         double satisfactionScore = total > 0 ? (positive - negative) / (double) total : 0;
                         
-                        // Create pie chart for selected category
                         DefaultPieDataset<String> pieDataset = new DefaultPieDataset<>();
                         pieDataset.setValue("Positive (" + positive + ")", posPct);
                         pieDataset.setValue("Negative (" + negative + ")", negPct);
@@ -201,7 +191,6 @@ public class AdvancedAnalysisPanel extends JPanel {
                         sb.append(String.format("Neutral:  %d (%.1f%%)\n", neutral, neuPct));
                         sb.append(String.format("\nSatisfaction Score: %.2f\n\n", satisfactionScore));
                         
-                        // Effectiveness assessment
                         if (satisfactionScore > 0.6) {
                             sb.append("✅ STATUS: HIGHLY EFFECTIVE\n");
                             sb.append("Assessment: This relief category is well-received\n");
@@ -224,7 +213,6 @@ public class AdvancedAnalysisPanel extends JPanel {
                             sb.append("Recommendation: Urgent intervention required\n");
                         }
                         
-                        // List individual posts
                         sb.append("\n\n📝 Recent Posts/Comments for this category:\n");
                         categoryPosts.stream().limit(10).forEach(post -> {
                             sb.append(String.format("  - %s (%s): %s\n",
@@ -241,7 +229,7 @@ public class AdvancedAnalysisPanel extends JPanel {
                 textArea0.setCaretPosition(0);
             } catch (Exception ex) {
                 textArea0.setText("Error: " + ex.getMessage());
-                // Log error
+
             }
         });
         
@@ -257,7 +245,6 @@ public class AdvancedAnalysisPanel extends JPanel {
         
         tabs.addTab("By Category (Selector)", individualCategoryPanel);
 
-        // By Category
         JPanel categoryPanel = new JPanel(new BorderLayout());
         ChartPanel chartPanel1 = new ChartPanel(null);
         chartPanel1.setPreferredSize(new Dimension(800, 350));
@@ -318,7 +305,6 @@ public class AdvancedAnalysisPanel extends JPanel {
         categoryPanel.add(buttonPanel1, BorderLayout.SOUTH);
         tabs.addTab("By Category", categoryPanel);
 
-        // Sentiment Distribution
         JPanel sentimentPanel = new JPanel(new BorderLayout());
         ChartPanel pieChartPanel = new ChartPanel(null);
         pieChartPanel.setPreferredSize(new Dimension(400, 350));
@@ -383,14 +369,11 @@ public class AdvancedAnalysisPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         JTabbedPane tabs = new JTabbedPane();
 
-        // === NEW: By Category Temporal with Selector ===
         JPanel categoryTemporalPanel = new JPanel(new BorderLayout());
         
-        // Create top panel with disaster AND category selectors
         JPanel selectorPanel2 = new JPanel(new FlowLayout(FlowLayout.LEFT));
         selectorPanel2.setBorder(BorderFactory.createTitledBorder("Select Disaster & Relief Category for Temporal Analysis"));
         
-        // Disaster selector
         JLabel disasterLabel2 = new JLabel("Disaster Type: ");
         JComboBox<String> disasterSelector2 = new JComboBox<>();
         disasterSelector2.addItem("All Disasters");
@@ -404,7 +387,6 @@ public class AdvancedAnalysisPanel extends JPanel {
         selectorPanel2.add(disasterSelector2);
         selectorPanel2.add(new JLabel("  |  Category: "));
         
-        // Category selector
         JComboBox<String> categorySelector2 = new JComboBox<>();
         categorySelector2.addItem("ALL CATEGORIES");
         for (ReliefItem.Category cat : ReliefItem.Category.values()) {
@@ -413,7 +395,6 @@ public class AdvancedAnalysisPanel extends JPanel {
         
         selectorPanel2.add(categorySelector2);
         
-        // Chart and text area
         ChartPanel chartPanel2 = new ChartPanel(null);
         chartPanel2.setPreferredSize(new Dimension(800, 350));
         InteractiveChartUtility.makeChartInteractive(chartPanel2);
@@ -425,11 +406,10 @@ public class AdvancedAnalysisPanel extends JPanel {
         JButton btnAnalyzeCategoryTemporal = new JButton("Analyze");
         btnAnalyzeCategoryTemporal.addActionListener(e -> {
             try {
-                // Get selected disaster and category
+
                 String selectedDisaster = (String) disasterSelector2.getSelectedItem();
                 String selectedCategory = (String) categorySelector2.getSelectedItem();
                 
-                // Filter posts by disaster type first
                 List<Post> posts = model.getPosts();
                 if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
                     posts = posts.stream()
@@ -461,7 +441,6 @@ public class AdvancedAnalysisPanel extends JPanel {
                 
                 final ReliefItem.Category finalCategory = targetCategory;
                 
-                // Filter posts by category if selected
                 List<Post> filteredPosts = posts.stream()
                     .filter(p -> finalCategory == null || (p.getReliefItem() != null && p.getReliefItem().getCategory() == finalCategory))
                     .collect(Collectors.toList());
@@ -472,7 +451,6 @@ public class AdvancedAnalysisPanel extends JPanel {
                     return;
                 }
                 
-                // Group by date
                 Map<String, List<Post>> byDate = filteredPosts.stream()
                     .collect(Collectors.groupingBy(p -> p.getCreatedAt().toLocalDate().toString()));
                 
@@ -508,7 +486,6 @@ public class AdvancedAnalysisPanel extends JPanel {
                 );
                 chartPanel2.setChart(chart);
                 
-                // Overall trend analysis
                 sb.append("\n=== TREND ANALYSIS ===\n");
                 List<Map.Entry<String, List<Post>>> sortedEntries = new ArrayList<>(byDate.entrySet());
                 sortedEntries.sort(Map.Entry.comparingByKey());
@@ -561,7 +538,6 @@ public class AdvancedAnalysisPanel extends JPanel {
         
         tabs.addTab("By Category (Temporal)", categoryTemporalPanel);
 
-        // Temporal Distribution
         JPanel temporalPanel = new JPanel(new BorderLayout());
         ChartPanel chartPanel = new ChartPanel(null);
         chartPanel.setPreferredSize(new Dimension(800, 350));
@@ -616,7 +592,6 @@ public class AdvancedAnalysisPanel extends JPanel {
         temporalPanel.add(buttonPanel, BorderLayout.SOUTH);
         tabs.addTab("Over Time", temporalPanel);
 
-        // Comment Analysis
         JPanel commentPanel = new JPanel(new BorderLayout());
         JTextArea commentArea = new JTextArea();
         commentArea.setEditable(false);
@@ -670,7 +645,6 @@ public class AdvancedAnalysisPanel extends JPanel {
     private JPanel createCombinedTab() {
         JPanel panel = new JPanel(new BorderLayout());
         
-        // Add disaster selector panel
         JPanel selectorPanel3 = new JPanel(new FlowLayout(FlowLayout.LEFT));
         selectorPanel3.setBorder(BorderFactory.createTitledBorder("Select Disaster Type"));
         
@@ -694,10 +668,9 @@ public class AdvancedAnalysisPanel extends JPanel {
         JButton btn = new JButton("Generate Report");
         btn.addActionListener(e -> {
             try {
-                // Get selected disaster
+
                 String selectedDisaster = (String) disasterSelector3.getSelectedItem();
                 
-                // Filter posts by disaster type
                 List<Post> posts = model.getPosts();
                 if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
                     posts = posts.stream()
@@ -721,7 +694,6 @@ public class AdvancedAnalysisPanel extends JPanel {
                 }
                 sb.append("═".repeat(70)).append("\n\n");
 
-                // Problem 1
                 sb.append("📊 PROBLEM 1: PUBLIC SATISFACTION ANALYSIS\n");
                 sb.append("─".repeat(70)).append("\n");
 
@@ -736,7 +708,6 @@ public class AdvancedAnalysisPanel extends JPanel {
                     sb.append(String.format("%-20s: %.1f%% satisfaction %s\n", cat.getDisplayName(), posPct, status));
                 });
 
-                // Problem 2
                 sb.append("\n📈 PROBLEM 2: TEMPORAL SENTIMENT TRACKING\n");
                 sb.append("─".repeat(70)).append("\n");
 
@@ -751,7 +722,6 @@ public class AdvancedAnalysisPanel extends JPanel {
                     sb.append(String.format("%s: %s (P:%d N:%d)\n", entry.getKey(), trend, pos, neg));
                 });
 
-                // Summary
                 sb.append("\n📋 SUMMARY\n");
                 sb.append("─".repeat(70)).append("\n");
                 sb.append(String.format("Total Posts: %d\n", posts.size()));

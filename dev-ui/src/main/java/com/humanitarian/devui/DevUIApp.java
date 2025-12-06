@@ -7,31 +7,23 @@ import com.humanitarian.devui.database.DatabaseManager;
 import com.humanitarian.devui.database.DataPersistenceManager;
 import com.humanitarian.devui.sentiment.PythonSentimentAnalyzer;
 
-/**
- * Main application entry point.
- * Demonstrates proper application initialization and MVC pattern usage.
- */
 public class DevUIApp {
     public static void main(String[] args) {
         try {
-            // Initialize DisasterManager with disaster types
+
             DisasterManager disasterManager = DisasterManager.getInstance();
             
-            // Load persisted custom disasters before creating Model
             DataPersistenceManager persistenceManager = new DataPersistenceManager();
             persistenceManager.loadDisasters(disasterManager);
             
-            // Initialize MVC components
             Model model = new Model();
 
-            // Initialize with Python sentiment analyzer (Vietnamese + English support)
             PythonSentimentAnalyzer analyzer = new PythonSentimentAnalyzer(
                 "http://localhost:5001", 
                 "xlm-roberta-large-xnli (Vietnamese + English)"
             );
             model.setSentimentAnalyzer(analyzer);
 
-            // Load saved data from database on startup
             try {
                 DatabaseManager dbManager = new DatabaseManager();
                 java.util.List<Post> savedPosts = dbManager.getAllPosts();
@@ -47,7 +39,6 @@ public class DevUIApp {
                 System.err.println("Note: Could not load from database: " + e.getMessage());
             }
 
-            // Start the UI
             javax.swing.SwingUtilities.invokeLater(() -> {
                 new View(model);
             });

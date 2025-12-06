@@ -4,28 +4,15 @@ import com.humanitarian.devui.model.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
-/**
- * Analysis Module 2: Tracks sentiment per relief item over time.
- * Shows how public sentiment changes for each relief category during recovery period.
- * 
- * Problem 2 - Detailed Analysis:
- * - Analyze sentiment trends for each relief category (cash, medical, shelter, food, transportation)
- * - Track sentiment changes across time buckets (6-hour intervals)
- * - Identify patterns: improving, deteriorating, or stable
- * - Measure effectiveness by comparing positive vs negative sentiment
- * - Highlight areas of success and gaps needing attention
- */
 public class TimeSeriesSentimentModule implements AnalysisModule {
-    private static final int TIME_BUCKET_HOURS = 6; // Group data into 6-hour buckets
+    private static final int TIME_BUCKET_HOURS = 6;
 
     @Override
     public Map<String, Object> analyze(List<Post> posts) {
         Map<String, Object> results = new LinkedHashMap<>();
 
-        // Group sentiments by relief category and time bucket
         Map<ReliefItem.Category, Map<LocalDateTime, List<Sentiment>>> timeSeries = new HashMap<>();
         
-        // Collect all sentiments for each category
         for (Post post : posts) {
             if (post.getReliefItem() != null && post.getSentiment() != null) {
                 ReliefItem.Category category = post.getReliefItem().getCategory();
@@ -36,7 +23,6 @@ public class TimeSeriesSentimentModule implements AnalysisModule {
                         .add(post.getSentiment());
             }
 
-            // Also process comments
             for (Comment comment : post.getComments()) {
                 if (comment.getReliefItem() != null && comment.getSentiment() != null) {
                     ReliefItem.Category category = comment.getReliefItem().getCategory();
@@ -49,7 +35,6 @@ public class TimeSeriesSentimentModule implements AnalysisModule {
             }
         }
 
-        // Convert to detailed analysis format
         Map<String, Object> timeSeriesAnalysis = new LinkedHashMap<>();
         Map<String, Object> sectorEffectiveness = new LinkedHashMap<>();
         Map<String, Object> detailedInsights = new LinkedHashMap<>();
@@ -59,14 +44,11 @@ public class TimeSeriesSentimentModule implements AnalysisModule {
             if (categoryTimeSeries != null && !categoryTimeSeries.isEmpty()) {
                 String categoryName = category.getDisplayName();
                 
-                // Analyze time series
                 Map<String, Object> categoryAnalysis = analyzeTimeSeries(categoryTimeSeries);
                 timeSeriesAnalysis.put(categoryName, categoryAnalysis);
                 
-                // Determine effectiveness
                 sectorEffectiveness.put(categoryName, determineEffectiveness(categoryAnalysis));
                 
-                // Generate detailed insights
                 detailedInsights.put(categoryName, generateDetailedInsights(categoryName, categoryAnalysis));
             }
         }
@@ -88,9 +70,6 @@ public class TimeSeriesSentimentModule implements AnalysisModule {
                 .withNano(0);
     }
 
-    /**
-     * Detailed analysis of sentiment time series for a relief category
-     */
     private Map<String, Object> analyzeTimeSeries(Map<LocalDateTime, List<Sentiment>> timeSeries) {
         Map<String, Object> analysis = new LinkedHashMap<>();
         List<Map<String, Object>> timePoints = new ArrayList<>();
@@ -121,13 +100,11 @@ public class TimeSeriesSentimentModule implements AnalysisModule {
             timePoint.put("negative_ratio", String.format("%.2f%%", negativeRatio * 100));
             timePoint.put("neutral_ratio", String.format("%.2f%%", neutralRatio * 100));
             
-            // Calculate sentiment score (-1 to 1)
             double sentimentScore = (positive - negative) / (double) sentiments.size();
             timePoint.put("sentiment_score", String.format("%.2f", sentimentScore));
 
             timePoints.add(timePoint);
             
-            // Accumulate for overall stats
             positiveSum += positive;
             negativeSum += negative;
             totalCount += sentiments.size();
@@ -139,22 +116,17 @@ public class TimeSeriesSentimentModule implements AnalysisModule {
         analysis.put("overall_negative_ratio", String.format("%.2f%%", (negativeSum / totalCount) * 100));
         analysis.put("total_records", (int) totalCount);
         
-        // Calculate volatility (how much sentiment changes over time)
         double volatility = calculateVolatility(timePoints);
         analysis.put("sentiment_volatility", String.format("%.2f", volatility));
 
         return analysis;
     }
 
-    /**
-     * Calculate trend based on first and last sentiment ratio
-     */
     private String calculateTrend(List<Map<String, Object>> timePoints) {
         if (timePoints.size() < 2) {
             return "INSUFFICIENT_DATA";
         }
 
-        // Extract positive ratio from first and last time point
         String firstRatioStr = (String) timePoints.get(0).get("positive_ratio");
         String lastRatioStr = (String) timePoints.get(timePoints.size() - 1).get("positive_ratio");
         
@@ -176,9 +148,6 @@ public class TimeSeriesSentimentModule implements AnalysisModule {
         }
     }
 
-    /**
-     * Calculate volatility - how much sentiment fluctuates
-     */
     private double calculateVolatility(List<Map<String, Object>> timePoints) {
         if (timePoints.size() < 2) return 0;
         
@@ -198,9 +167,6 @@ public class TimeSeriesSentimentModule implements AnalysisModule {
         return Math.sqrt(sumSquaredDifferences / (timePoints.size() - 1));
     }
 
-    /**
-     * Determine effectiveness based on sentiment analysis
-     */
     private Map<String, Object> determineEffectiveness(Map<String, Object> categoryAnalysis) {
         Map<String, Object> effectiveness = new LinkedHashMap<>();
         
@@ -211,7 +177,6 @@ public class TimeSeriesSentimentModule implements AnalysisModule {
         effectiveness.put("trend", trend);
         effectiveness.put("positive_sentiment_percentage", positiveRatioStr);
         
-        // Effectiveness determination
         String status;
         String recommendation;
         
@@ -232,7 +197,6 @@ public class TimeSeriesSentimentModule implements AnalysisModule {
             recommendation = "Maintain current operations while seeking improvements";
         }
         
-        // Also consider positive ratio threshold
         if (positiveRatio > 0.7) {
             status = "HIGHLY EFFECTIVE";
         } else if (positiveRatio < 0.3) {
@@ -245,16 +209,12 @@ public class TimeSeriesSentimentModule implements AnalysisModule {
         return effectiveness;
     }
 
-    /**
-     * Generate detailed insights for a relief category
-     */
     private Map<String, Object> generateDetailedInsights(String categoryName, Map<String, Object> analysis) {
         Map<String, Object> insights = new LinkedHashMap<>();
         
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> timePoints = (List<Map<String, Object>>) analysis.get("time_points");
         
-        // Find peak and lowest sentiment times
         Map<String, Object> peakTime = timePoints.stream()
                 .max(Comparator.comparingDouble(t -> {
                     String scoreStr = (String) t.get("sentiment_score");
@@ -274,16 +234,12 @@ public class TimeSeriesSentimentModule implements AnalysisModule {
         insights.put("lowest_sentiment_time", lowestTime != null ? lowestTime.get("timestamp") : "N/A");
         insights.put("lowest_sentiment_score", lowestTime != null ? lowestTime.get("sentiment_score") : "N/A");
         
-        // Generate narrative
         String narrative = generateNarrative(categoryName, analysis);
         insights.put("narrative", narrative);
         
         return insights;
     }
 
-    /**
-     * Generate narrative analysis for sector
-     */
     private String generateNarrative(String categoryName, Map<String, Object> analysis) {
         String trend = (String) analysis.get("trend");
         String positiveStr = (String) analysis.get("overall_positive_ratio");
@@ -320,9 +276,6 @@ public class TimeSeriesSentimentModule implements AnalysisModule {
         return narrative.toString();
     }
 
-    /**
-     * Generate overall summary of all sectors
-     */
     private Map<String, Object> generateSummary(Map<String, Object> sectorEffectiveness) {
         Map<String, Object> summary = new LinkedHashMap<>();
         

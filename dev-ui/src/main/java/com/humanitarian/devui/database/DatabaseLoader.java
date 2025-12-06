@@ -6,14 +6,6 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.Random;
 
-/**
- * Utility class to load predefined database content.
- * Provides fixed, immutable reference data with diverse dates and relief types.
- * - YAGI: September 2024
- * - MATMO: June-July 2025
- * - FLOOD: November-December 2024
- * - DISASTER: January-March 2025
- */
 public class DatabaseLoader {
     
     private static final Random random = new Random();
@@ -37,7 +29,6 @@ public class DatabaseLoader {
     private static void loadComprehensiveData(Model model) {
         int postCounter = 1;
         
-        // ===== YAGI (September 2024) - 8 posts =====
         DisasterType yagi = DisasterManager.getInstance().findDisasterType("yagi");
         
         model.addPost(createPost(postCounter++, "Emergency alert: Typhoon Yagi approaching. Evacuation centers opening immediately. #yagi", 
@@ -72,7 +63,6 @@ public class DatabaseLoader {
             randomDateInMonth(2024, 10), "Infrastructure", "yagi", yagi,
             Sentiment.SentimentType.POSITIVE, 0.80, ReliefItem.Category.TRANSPORTATION, "Infrastructure"));
         
-        // ===== FLOOD (November-December 2024) - 9 posts =====
         DisasterType flood = DisasterManager.getInstance().findDisasterType("flood");
         
         model.addPost(createPost(postCounter++, "Heavy rainfall causes severe flooding in lowland areas. Evacuation orders issued for #flood zones. #urgent", 
@@ -111,7 +101,6 @@ public class DatabaseLoader {
             randomDateInMonth(2024, 12), "Public Works", "flood", flood,
             Sentiment.SentimentType.POSITIVE, 0.80, ReliefItem.Category.TRANSPORTATION, "Infrastructure"));
         
-        // ===== MATMO (June-July 2025) - 9 posts =====
         DisasterType matmo = DisasterManager.getInstance().findDisasterType("matmo");
         
         model.addPost(createPost(postCounter++, "Water contamination emergency reported in #matmo region. Health department issues public alert. #health", 
@@ -150,7 +139,6 @@ public class DatabaseLoader {
             randomDateInMonth(2025, 7), "Recovery", "matmo", matmo,
             Sentiment.SentimentType.POSITIVE, 0.80, ReliefItem.Category.CASH, "Recovery plan"));
         
-        // ===== DISASTER Multi-sector (January-March 2025) - 5 posts =====
         DisasterType disaster = DisasterManager.getInstance().findDisasterType("disaster");
         
         model.addPost(createPost(postCounter++, "Multi-sector disaster response coordination meeting. Medical, food, shelter and transport aligned. #coordination", 

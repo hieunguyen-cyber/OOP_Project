@@ -3,17 +3,9 @@ package com.humanitarian.devui.model;
 import java.io.Serializable;
 import java.util.*;
 
-/**
- * Manages disaster types (e.g., yagi, matmo, etc.)
- * Normalizes hashtags and keywords to disaster types
- * - #yagi → yagi
- * - yagi → yagi
- * - #matmo → matmo
- * - matmo → matmo
- */
 public class DisasterType implements Serializable {
     private final String name;
-    private final Set<String> aliases; // Keywords and hashtags that map to this disaster type
+    private final Set<String> aliases;
 
     public DisasterType(String name) {
         this.name = normalize(name);
@@ -21,9 +13,6 @@ public class DisasterType implements Serializable {
         this.aliases.add(this.name);
     }
 
-    /**
-     * Normalize: Remove # prefix and convert to lowercase
-     */
     public static String normalize(String input) {
         if (input == null || input.isEmpty()) {
             return "";
@@ -31,18 +20,12 @@ public class DisasterType implements Serializable {
         return input.trim().toLowerCase().replaceAll("^#", "");
     }
 
-    /**
-     * Add an alias (keyword or hashtag) that maps to this disaster type
-     */
     public void addAlias(String alias) {
         if (alias != null && !alias.isEmpty()) {
             this.aliases.add(normalize(alias));
         }
     }
 
-    /**
-     * Check if a keyword/hashtag matches this disaster type
-     */
     public boolean matches(String keyword) {
         if (keyword == null || keyword.isEmpty()) {
             return false;
@@ -50,9 +33,6 @@ public class DisasterType implements Serializable {
         return this.aliases.contains(normalize(keyword));
     }
 
-    /**
-     * Get all aliases for this disaster type
-     */
     public Set<String> getAliases() {
         return new HashSet<>(this.aliases);
     }

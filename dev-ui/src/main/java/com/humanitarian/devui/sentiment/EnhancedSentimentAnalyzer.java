@@ -2,13 +2,8 @@ package com.humanitarian.devui.sentiment;
 
 import com.humanitarian.devui.model.Sentiment;
 
-/**
- * Enhanced Sentiment Analyzer with Vietnamese language support.
- * Uses multi-dimensional sentiment scoring with domain-specific keywords.
- */
 public class EnhancedSentimentAnalyzer implements SentimentAnalyzer {
     
-    // English keywords
     private static final String[] POSITIVE_WORDS_EN = {
             "good", "great", "excellent", "happy", "love", "thank", "thanks",
             "appreciate", "support", "help", "aid", "relief", "better", "improved",
@@ -23,7 +18,6 @@ public class EnhancedSentimentAnalyzer implements SentimentAnalyzer {
             "loss", "damage", "fear", "worried", "concern", "risk", "danger", "critical"
     };
 
-    // Vietnamese keywords (humanitarian domain)
     private static final String[] POSITIVE_WORDS_VI = {
             "tốt", "tuyệt vời", "xuất sắc", "tuyệt", "yêu", "cảm ơn", "cám ơn",
             "biết ơn", "hỗ trợ", "giúp đỡ", "trợ giúp", "cứu", "cứu trợ", "hỗ trợ",
@@ -51,27 +45,25 @@ public class EnhancedSentimentAnalyzer implements SentimentAnalyzer {
 
         String lowerText = text.toLowerCase();
         
-        // Count keyword occurrences
         int positiveCount = countMatches(lowerText, POSITIVE_WORDS_EN) + 
                            countMatches(lowerText, POSITIVE_WORDS_VI);
         int negativeCount = countMatches(lowerText, NEGATIVE_WORDS_EN) + 
                            countMatches(lowerText, NEGATIVE_WORDS_VI);
 
-        // Determine sentiment and confidence
         Sentiment.SentimentType type;
         double confidence;
 
         if (positiveCount > negativeCount) {
             type = Sentiment.SentimentType.POSITIVE;
-            // Confidence increases with more positive indicators
+
             confidence = Math.min(0.99, 0.6 + (positiveCount * 0.15));
         } else if (negativeCount > positiveCount) {
             type = Sentiment.SentimentType.NEGATIVE;
-            // Confidence increases with more negative indicators
+
             confidence = Math.min(0.99, 0.6 + (negativeCount * 0.15));
         } else {
             type = Sentiment.SentimentType.NEUTRAL;
-            // Lower confidence if no clear sentiment indicators
+
             confidence = positiveCount == 0 && negativeCount == 0 ? 0.4 : 0.5;
         }
 
@@ -106,13 +98,10 @@ public class EnhancedSentimentAnalyzer implements SentimentAnalyzer {
         System.out.println("EnhancedSentimentAnalyzer shutdown");
     }
 
-    /**
-     * Count how many keywords match in the text
-     */
     private int countMatches(String text, String[] keywords) {
         int count = 0;
         for (String keyword : keywords) {
-            // Check for word boundaries to avoid substring matches
+
             if (text.contains(" " + keyword + " ") || text.contains(" " + keyword) || 
                 text.endsWith(keyword) || text.startsWith(keyword)) {
                 count++;

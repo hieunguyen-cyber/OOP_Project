@@ -4,36 +4,23 @@ import com.humanitarian.logistics.model.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Analysis Module 1: Determines public satisfaction and dissatisfaction.
- * 
- * Problem 1 - Detailed Analysis:
- * - Evaluates positive and negative sentiment related to relief item types (categories)
- * - Identifies which relief categories are well-received vs problematic
- * - Provides satisfaction scores for each category
- * - Generates recommendations for resource allocation based on sentiment
- * - Measures impact of different relief efforts on public sentiment
- */
 public class SatisfactionAnalysisModule implements AnalysisModule {
     @Override
     public Map<String, Object> analyze(List<Post> posts) {
         Map<String, Object> results = new LinkedHashMap<>();
 
-        // Group posts and comments by relief category
         Map<ReliefItem.Category, List<Sentiment>> sentimentsByCategory = new HashMap<>();
 
         for (ReliefItem.Category category : ReliefItem.Category.values()) {
             sentimentsByCategory.put(category, new ArrayList<>());
         }
 
-        // Collect sentiments from posts
         for (Post post : posts) {
             if (post.getReliefItem() != null && post.getSentiment() != null) {
                 sentimentsByCategory.computeIfAbsent(post.getReliefItem().getCategory(), k -> new ArrayList<>())
                         .add(post.getSentiment());
             }
 
-            // Also collect from comments
             for (Comment comment : post.getComments()) {
                 if (comment.getReliefItem() != null && comment.getSentiment() != null) {
                     sentimentsByCategory.computeIfAbsent(comment.getReliefItem().getCategory(), k -> new ArrayList<>())
@@ -42,7 +29,6 @@ public class SatisfactionAnalysisModule implements AnalysisModule {
             }
         }
 
-        // Calculate statistics per category
         Map<String, Map<String, Object>> categoryStats = new LinkedHashMap<>();
         Map<String, Object> categoryEffectiveness = new LinkedHashMap<>();
         
@@ -65,9 +51,6 @@ public class SatisfactionAnalysisModule implements AnalysisModule {
         return results;
     }
 
-    /**
-     * Calculate detailed sentiment statistics for a relief category
-     */
     private Map<String, Object> calculateSentimentStats(List<Sentiment> sentiments,
                                                         ReliefItem.Category category) {
         Map<String, Object> stats = new LinkedHashMap<>();
@@ -80,12 +63,10 @@ public class SatisfactionAnalysisModule implements AnalysisModule {
                 .mapToDouble(Sentiment::getConfidence).sum();
         double avgConfidence = totalConfidence / sentiments.size();
 
-        // Calculate percentages
         double positivePercentage = (double) positiveCount / sentiments.size() * 100;
         double negativePercentage = (double) negativeCount / sentiments.size() * 100;
         double neutralPercentage = (double) neutralCount / sentiments.size() * 100;
 
-        // Calculate satisfaction score (-1.0 to 1.0)
         double satisfactionScore = (positiveCount - negativeCount) / (double) sentiments.size();
 
         stats.put("category", category.getDisplayName());
@@ -103,9 +84,6 @@ public class SatisfactionAnalysisModule implements AnalysisModule {
         return stats;
     }
 
-    /**
-     * Assess category effectiveness based on sentiment distribution
-     */
     private Map<String, Object> assessCategoryEffectiveness(Map<String, Object> stats) {
         Map<String, Object> effectiveness = new LinkedHashMap<>();
 
@@ -121,7 +99,6 @@ public class SatisfactionAnalysisModule implements AnalysisModule {
         String assessment;
         String recommendation;
 
-        // Determine status based on positive/negative ratio
         if (positive > 70) {
             status = "HIGHLY SATISFACTORY";
             assessment = "This relief category is well-received with strong positive sentiment";
@@ -156,13 +133,9 @@ public class SatisfactionAnalysisModule implements AnalysisModule {
         return effectiveness;
     }
 
-    /**
-     * Generate detailed insights for each category
-     */
     private Map<String, Object> generateDetailedInsights(Map<String, Map<String, Object>> categoryStats) {
         Map<String, Object> insights = new LinkedHashMap<>();
 
-        // Sort by satisfaction score
         List<Map.Entry<String, Map<String, Object>>> sorted = categoryStats.entrySet().stream()
                 .sorted((a, b) -> {
                     String scoreA = (String) a.getValue().get("satisfaction_score");
@@ -171,7 +144,6 @@ public class SatisfactionAnalysisModule implements AnalysisModule {
                 })
                 .collect(Collectors.toList());
 
-        // Most satisfied category
         if (!sorted.isEmpty()) {
             String topCategory = sorted.get(0).getKey();
             Map<String, Object> topStats = sorted.get(0).getValue();
@@ -180,7 +152,6 @@ public class SatisfactionAnalysisModule implements AnalysisModule {
             insights.put("highest_satisfaction_category", topCategory + " (" + positive + "/" + total + " positive)");
         }
 
-        // Least satisfied category
         if (!sorted.isEmpty()) {
             String bottomCategory = sorted.get(sorted.size() - 1).getKey();
             Map<String, Object> bottomStats = sorted.get(sorted.size() - 1).getValue();
@@ -189,7 +160,6 @@ public class SatisfactionAnalysisModule implements AnalysisModule {
             insights.put("lowest_satisfaction_category", bottomCategory + " (" + negative + "/" + total + " negative)");
         }
 
-        // Categories requiring urgent attention
         List<String> criticalCategories = categoryStats.entrySet().stream()
                 .filter(e -> {
                     String negStr = (String) e.getValue().get("negative_percentage");
@@ -204,13 +174,9 @@ public class SatisfactionAnalysisModule implements AnalysisModule {
         return insights;
     }
 
-    /**
-     * Generate resource allocation recommendations based on sentiment
-     */
     private Map<String, Object> generateResourceRecommendations(Map<String, Map<String, Object>> categoryStats) {
         Map<String, Object> recommendations = new LinkedHashMap<>();
 
-        // Sort by negative sentiment (descending) to prioritize problem areas
         List<Map.Entry<String, Map<String, Object>>> sorted = categoryStats.entrySet().stream()
                 .sorted((a, b) -> {
                     String negA = (String) a.getValue().get("negative_percentage");
