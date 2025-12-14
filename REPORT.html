@@ -3002,15 +3002,25 @@ operations.</p>
 
 <p><strong>Purpose:</strong> Bundle data and methods together while hiding internal details and controlling access to state. This prevents invalid data states and unintended external modifications.</p>
 
-<p><strong>Implementation in Post.java:</strong></p>
+<h5>Implementation in Post.java (Package: com.humanitarian.logistics.model)</h5>
 
-<pre><code class="language-java">public abstract class Post implements Serializable, Comparable&lt;Post&gt; {
+<pre><code class="language-java">// ENCAPSULATION: Private fields + controlled access
+// Source: Post.java (lines 10-30, 32-64)
+public abstract class Post implements Serializable, Comparable&lt;Post&gt; {
+    // PRIVATE FINAL FIELDS: Immutable, cannot be changed after construction
     private final String postId;
     private final String content;
     private final LocalDateTime createdAt;
     private final String author;
     private final String source;
     
+    // MUTABLE FIELDS: Can change via setter methods
+    private Sentiment sentiment;
+    private ReliefItem reliefItem;
+    private String disasterKeyword;
+    private final List&lt;Comment&gt; comments;
+    
+    // CONSTRUCTOR: Null validation via Objects.requireNonNull()
     protected Post(String postId, String content, LocalDateTime createdAt,
                    String author, String source) {
         this.postId = Objects.requireNonNull(postId, "Post ID cannot be null");
@@ -3021,54 +3031,122 @@ operations.</p>
         this.comments = new ArrayList&lt;&gt;();
     }
     
+    // GETTERS: Public read access to private fields
     public String getPostId() { return postId; }
+    public String getContent() { return content; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public String getAuthor() { return author; }
+    public String getSource() { return source; }
+    public Sentiment getSentiment() { return sentiment; }
+    public ReliefItem getReliefItem() { return reliefItem; }
+    public String getDisasterKeyword() { return disasterKeyword; }
+    
+    // DEFENSIVE COPYING: Return unmodifiable collection
     public List&lt;Comment&gt; getComments() { 
-        return Collections.unmodifiableList(comments); 
+        return Collections.unmodifiableList(comments);  // Prevent external modifications
     }
     
-    public void addComment(Comment comment) {
-        if (comment != null) this.comments.add(comment);
-    }
+    // SETTERS: Controlled write access
+    public void setSentiment(Sentiment sentiment) { this.sentiment = sentiment; }
+    public void setReliefItem(ReliefItem reliefItem) { this.reliefItem = reliefItem; }
+    public void setDisasterKeyword(String disasterKeyword) { this.disasterKeyword = disasterKeyword; }
 }</code></pre>
 
-<p><strong>Key Techniques:</strong> Immutable fields (final), null safety via Objects.requireNonNull(), defensive copying, and controlled modification. <strong>Benefits:</strong> Data integrity, early error detection, and traceable changes.</p>
+<p><strong>Key Techniques:</strong></p>
+<ul>
+<li><strong>Immutable Fields:</strong> final keywords on postId, content, createdAt, author, source prevent modification</li>
+<li><strong>Null Safety:</strong> Objects.requireNonNull() in constructor validates all inputs early</li>
+<li><strong>Defensive Copying:</strong> getComments() returns Collections.unmodifiableList() to prevent external list modifications</li>
+<li><strong>Controlled Access:</strong> Private fields with public getters/setters allow validation logic in future</li>
+</ul>
+
+<p><strong>Benefits:</strong> Data integrity, early error detection (null checks in constructor), prevents invalid states, traceable changes.</p>
 
 <h4 id="abstraction">7.1.2 Abstraction - Hiding Implementation Complexity</h4>
 
 <p><strong>Purpose:</strong> Define WHAT operations an object performs without exposing HOW. This allows different implementations to be swapped without affecting client code.</p>
 
-<pre><code class="language-java">public interface SentimentAnalyzer {
+<h5>Strategy Interface (Package: com.humanitarian.logistics.sentiment)</h5>
+
+<pre><code class="language-java">// ABSTRACTION: Interface defines contract, hides implementation
+// Source: SentimentAnalyzer.java (lines 1-15)
+public interface SentimentAnalyzer {
     Sentiment analyzeSentiment(String text);
     Sentiment[] analyzeSentimentBatch(String[] texts);
     String getModelName();
     void initialize();
     void shutdown();
-}
+}</code></pre>
 
+<h5>Concrete Implementation - Rule-Based (Package: com.humanitarian.logistics.sentiment)</h5>
+
+<pre><code class="language-java">// CONCRETE IMPLEMENTATION: Keyword-based sentiment analysis
+// Source: EnhancedSentimentAnalyzer.java (lines 1-113)
 public class EnhancedSentimentAnalyzer implements SentimentAnalyzer {
+    private static final String[] POSITIVE_WORDS_EN = {
+        "good", "great", "excellent", "happy", "love", "thank", "thanks",
+        "appreciate", "support", "help", "aid", "relief", "better", "improved"
+    };
+    
+    private static final String[] NEGATIVE_WORDS_EN = {
+        "bad", "poor", "terrible", "sad", "hate", "angry", "upset", "frustrated",
+        "struggle", "difficult", "problem", "issue", "lack", "missing"
+    };
+    
     @Override
     public Sentiment analyzeSentiment(String text) {
-        int positiveCount = countMatches(text.toLowerCase(), POSITIVE_WORDS_EN) + 
-                           countMatches(text.toLowerCase(), POSITIVE_WORDS_VI);
-        int negativeCount = countMatches(text.toLowerCase(), NEGATIVE_WORDS_EN) +
-                           countMatches(text.toLowerCase(), NEGATIVE_WORDS_VI);
+        if (text == null || text.trim().isEmpty()) {
+            return new Sentiment(Sentiment.SentimentType.NEUTRAL, 0.0, "");
+        }
+
+        String lowerText = text.toLowerCase();
         
-        Sentiment.SentimentType type = positiveCount > negativeCount ? 
-            Sentiment.SentimentType.POSITIVE : negativeCount > positiveCount ? 
-            Sentiment.SentimentType.NEGATIVE : Sentiment.SentimentType.NEUTRAL;
-        
-        double confidence = Math.min(Math.max(Math.abs(positiveCount - negativeCount) / 10.0, 0.6), 0.99);
+        // IMPLEMENTATION DETAILS HIDDEN: Keyword counting
+        int positiveCount = countMatches(lowerText, POSITIVE_WORDS_EN) + 
+                           countMatches(lowerText, POSITIVE_WORDS_VI);
+        int negativeCount = countMatches(lowerText, NEGATIVE_WORDS_EN) + 
+                           countMatches(lowerText, NEGATIVE_WORDS_VI);
+
+        Sentiment.SentimentType type;
+        double confidence;
+
+        if (positiveCount > negativeCount) {
+            type = Sentiment.SentimentType.POSITIVE;
+            confidence = Math.min(0.99, 0.6 + (positiveCount * 0.15));
+        } else if (negativeCount > positiveCount) {
+            type = Sentiment.SentimentType.NEGATIVE;
+            confidence = Math.min(0.99, 0.6 + (negativeCount * 0.15));
+        } else {
+            type = Sentiment.SentimentType.NEUTRAL;
+            confidence = positiveCount == 0 && negativeCount == 0 ? 0.4 : 0.5;
+        }
+
         return new Sentiment(type, confidence, text);
+    }
+    
+    @Override
+    public void initialize() {
+        System.out.println("✓ EnhancedSentimentAnalyzer initialized with bilingual support");
+    }
+    
+    @Override
+    public void shutdown() {
+        System.out.println("EnhancedSentimentAnalyzer shutdown");
     }
 }</code></pre>
 
-<p><strong>Benefits:</strong> Easy testing, runtime selection, future extensibility, zero client coupling.</p>
+<p><strong>Benefits:</strong> Client uses interface without knowing if it's keyword-based or ML-based, easy testing, runtime selection, future extensibility.</p>
 
 <h4 id="inheritance">7.1.3 Inheritance - Code Reuse and Hierarchies</h4>
 
 <p><strong>Purpose:</strong> Create class hierarchies where specialized subclasses inherit common behavior from parent classes, avoiding code duplication.</p>
 
-<pre><code class="language-java">public abstract class Post implements Serializable, Comparable&lt;Post&gt; {
+<h5>Parent Class (Package: com.humanitarian.logistics.model)</h5>
+
+<pre><code class="language-java">// PARENT CLASS: Abstract base with common behavior
+// Source: Post.java (lines 9-74)
+public abstract class Post implements Serializable, Comparable&lt;Post&gt; {
+    // Common fields: postId, content, createdAt, author, source, comments
     private final String postId;
     private final String content;
     private final LocalDateTime createdAt;
@@ -3076,98 +3154,217 @@ public class EnhancedSentimentAnalyzer implements SentimentAnalyzer {
     private final String source;
     private final List&lt;Comment&gt; comments;
     
-    public void addComment(Comment comment) { ... }
-    public List&lt;Comment&gt; getComments() { ... }
-    public void setSentiment(Sentiment sentiment) { ... }
+    // Common behavior: getters, setters, comment management
+    public void addComment(Comment comment) { 
+        if (comment != null) this.comments.add(comment);
+    }
     
+    public List&lt;Comment&gt; getComments() { 
+        return Collections.unmodifiableList(comments);
+    }
+    
+    // POLYMORPHIC METHOD: Define in parent, override in subclass
     @Override
     public int compareTo(Post other) {
         return this.createdAt.compareTo(other.createdAt);
     }
-}
-
-public class YouTubePost extends Post {
-    private String videoId;
-    
-    public YouTubePost(String postId, String content, LocalDateTime createdAt,
-                       String author, String videoId) {
-        super(postId, content, createdAt, author, "YouTube");
-        this.videoId = videoId;
-    }
 }</code></pre>
 
-<p><strong>Benefits:</strong> Code reuse, consistency, extensibility, and polymorphism.</p>
+<h5>Subclass (Package: com.humanitarian.logistics.model)</h5>
+
+<pre><code class="language-java">// SUBCLASS: Extends Post, adds YouTube-specific fields
+// Source: YouTubePost.java (lines 4-20)
+public class YouTubePost extends Post {
+    private static final long serialVersionUID = 1L;
+
+    // YouTube-specific fields
+    private String channelId;
+    private int likes;
+    private int views;
+    private DisasterType disasterType;
+
+    // Constructor calls parent constructor via super()
+    public YouTubePost(String postId, String content, LocalDateTime createdAt,
+                       String author, String channelId) {
+        super(postId, content, createdAt, author, "YOUTUBE");  // Call parent constructor
+        this.channelId = channelId;
+        this.likes = 0;
+        this.views = 0;
+        this.disasterType = null;
+        
+        // YouTube posts have default food relief item
+        this.setReliefItem(new ReliefItem(ReliefItem.Category.FOOD, "General Relief", 3));
+    }
+    
+    // YouTube-specific methods
+    public String getChannelId() { return channelId; }
+    public int getLikes() { return likes; }
+    public int getViews() { return views; }
+}</code></pre>
+
+<p><strong>Benefits:</strong> Code reuse (common Post behavior), consistency (all posts have comments, sentiment), extensibility (add new Post types), polymorphism (compareTo works for all Post subclasses).</p>
 
 <h4 id="polymorphism">7.1.4 Polymorphism - Runtime Behavior Selection</h4>
 
-<pre><code class="language-java">public class Model {
+<p><strong>Purpose:</strong> Objects of different types can be treated uniformly through a common interface, with behavior determined at runtime.</p>
+
+<h5>Polymorphic Usage (Package: com.humanitarian.logistics.ui)</h5>
+
+<pre><code class="language-java">// POLYMORPHISM: Model works with ANY Post subclass
+// Source: Model.java (lines 72-93)
+public class Model {
     private SentimentAnalyzer sentimentAnalyzer;
     
-    public void setSentimentAnalyzer(SentimentAnalyzer analyzer) {
-        if (this.sentimentAnalyzer != null) {
-            this.sentimentAnalyzer.shutdown();
+    // POLYMORPHIC METHOD: Analyzes Post or YouTubePost the same way
+    public void addPost(Post post) {  // Accepts any Post subclass
+        if (post.getReliefItem() == null) {
+            categoryClassifier.classifyPost(post);
         }
-        this.sentimentAnalyzer = analyzer;
-        this.sentimentAnalyzer.initialize();
-        notifyListeners();
-    }
-    
-    public void addPost(Post post) {
+
+        // POLYMORPHIC CALL: Works with EnhancedSentimentAnalyzer OR PythonSentimentAnalyzer
         if (post.getSentiment() == null && sentimentAnalyzer != null) {
             Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(post.getContent());
             post.setSentiment(sentiment);
         }
-        // Process comments similarly
+
+        // Process comments - same logic for all Post subclasses
         for (Comment comment : post.getComments()) {
             if (comment.getSentiment() == null && sentimentAnalyzer != null) {
                 Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(comment.getContent());
                 comment.setSentiment(sentiment);
             }
         }
-        this.posts.add(post);
+
+        this.posts.add(post);  // Polymorphic: Post OR YouTubePost
+        dbManager.savePost(post);  // DatabaseManager handles any Post type
+        notifyListeners();
     }
 }</code></pre>
 
+<p><strong>Key Points:</strong> addPost() accepts Post parameter, but can receive YouTubePost instance at runtime. Method behavior determined by actual object type, not declared type.</p>
+
 <h4 id="interfaces">7.1.5 Interfaces - Contracts and Multiple Implementations</h4>
 
-<pre><code class="language-java">public interface SentimentAnalyzer { Sentiment analyzeSentiment(String text); }
-public interface DataCrawler { List&lt;Post&gt; crawlPosts(List&lt;String&gt; keywords, List&lt;String&gt; hashtags, int limit); }
-public interface AnalysisModule { Map&lt;String, Object&gt; analyze(List&lt;Post&gt; posts); }
-public interface ModelListener { void modelChanged(); }</code></pre>
+<p><strong>Purpose:</strong> Define contracts that multiple unrelated classes can implement, enabling polymorphism and loose coupling.</p>
 
-<p><strong>Benefits:</strong> Contracts, loose coupling, easy testing, runtime flexibility.</p>
+<h5>Interface Contracts in System (Package: com.humanitarian.logistics)</h5>
+
+<pre><code class="language-java">// INTERFACE: Contract for sentiment analysis
+// Source: SentimentAnalyzer.java
+public interface SentimentAnalyzer { 
+    Sentiment analyzeSentiment(String text);
+    Sentiment[] analyzeSentimentBatch(String[] texts);
+    String getModelName();
+    void initialize();
+    void shutdown();
+}
+
+// INTERFACE: Contract for data crawling
+// Source: DataCrawler.java
+public interface DataCrawler { 
+    List&lt;Post&gt; crawlPosts(List&lt;String&gt; keywords, List&lt;String&gt; hashtags, int limit);
+    void initialize();
+    void shutdown();
+}
+
+// INTERFACE: Contract for analysis modules
+// Source: AnalysisModule.java
+public interface AnalysisModule { 
+    Map&lt;String, Object&gt; analyze(List&lt;Post&gt; posts);
+}
+
+// INTERFACE: Observer pattern contract
+// Source: ModelListener.java
+public interface ModelListener { 
+    void modelChanged();
+}</code></pre>
+
+<p><strong>Benefits:</strong> Contracts without implementation, loose coupling (client depends on interface, not concrete class), multiple implementations, runtime flexibility.</p>
 
 <h4 id="abstract-classes">7.1.6 Abstract Classes - Partial Implementation</h4>
 
-<p>Unlike interfaces, abstract classes provide actual implementation and shared state:</p>
+<p><strong>Purpose:</strong> Provide shared implementation and state that subclasses inherit, unlike interfaces which are pure contracts.</p>
 
-<pre><code class="language-java">public abstract class Post implements Serializable, Comparable&lt;Post&gt; {
+<h5>Abstract Class with Implementation (Package: com.humanitarian.logistics.model)</h5>
+
+<pre><code class="language-java">// ABSTRACT CLASS: Has both abstract methods and concrete implementation
+// Source: Post.java (lines 9-138)
+public abstract class Post implements Serializable, Comparable&lt;Post&gt; {
+    // SHARED STATE: All Post subclasses have these fields
     private final String postId;
-    private final List&lt;Comment&gt; comments = new ArrayList&lt;&gt;();
+    private final String content;
+    private final LocalDateTime createdAt;
+    private final String author;
+    private final String source;
+    private final List&lt;Comment&gt; comments;
     
+    // CONCRETE IMPLEMENTATION: Shared by all subclasses
+    public String getPostId() { return postId; }
+    public String getContent() { return content; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public String getAuthor() { return author; }
+    public String getSource() { return source; }
+    
+    // SHARED BEHAVIOR: Comment management
     public List&lt;Comment&gt; getComments() { 
-        return Collections.unmodifiableList(comments); 
+        return Collections.unmodifiableList(comments);
     }
     
     public void addComment(Comment comment) {
         if (comment != null) this.comments.add(comment);
     }
-}</code></pre>
+    
+    // ABSTRACT METHOD: Subclasses must implement
+    @Override
+    public abstract int compareTo(Post other);
+}
+</code></pre>
+
+<p><strong>Difference from Interface:</strong> Abstract class can have concrete implementation and state; interface is pure contract. Post class provides comment management (shared), but subclasses like YouTubePost add YouTube-specific fields.</p>
 
 <h4 id="composition">7.1.7 Composition - Has-A Relationships</h4>
 
-<pre><code class="language-java">public class Model {
-    private SentimentAnalyzer sentimentAnalyzer = new EnhancedSentimentAnalyzer();
-    private DatabaseManager dbManager = new DatabaseManager();
-    private List&lt;Post&gt; posts = new ArrayList&lt;&gt;();
-    private List&lt;ModelListener&gt; listeners = new ArrayList&lt;&gt;();
+<p><strong>Purpose:</strong> Create objects by combining other objects (has-a) rather than inheritance (is-a). Provides flexibility and runtime behavior changes.</p>
+
+<h5>Composition Example (Package: com.humanitarian.logistics.ui)</h5>
+
+<pre><code class="language-java">// COMPOSITION: Model HAS-A SentimentAnalyzer, DatabaseManager, etc.
+// Source: Model.java (lines 20-27)
+public class Model {
+    // COMPOSED OBJECTS: Injected via setters for runtime flexibility
+    private SentimentAnalyzer sentimentAnalyzer;      // HAS-A SentimentAnalyzer
+    private DatabaseManager dbManager;                // HAS-A DatabaseManager
+    private DataPersistenceManager persistenceManager;// HAS-A DataPersistenceManager
+    private PythonCategoryClassifier categoryClassifier; // HAS-A Classifier
+    private Map&lt;String, AnalysisModule&gt; analysisModules;  // HAS-A Map of modules
+    private List&lt;ModelListener&gt; listeners;          // HAS-A List of observers
+    private List&lt;Post&gt; posts;                       // HAS-A List of posts
     
+    public Model() {
+        this.sentimentAnalyzer = new EnhancedSentimentAnalyzer();  // Default
+        this.dbManager = new DatabaseManager();
+        this.persistenceManager = new DataPersistenceManager();
+        // ... initialize other compositions ...
+    }
+    
+    // RUNTIME BEHAVIOR CHANGE: Swap analyzer without changing Model code
     public void setSentimentAnalyzer(SentimentAnalyzer analyzer) {
-        this.sentimentAnalyzer = analyzer;
+        if (this.sentimentAnalyzer != null) {
+            this.sentimentAnalyzer.shutdown();
+        }
+        this.sentimentAnalyzer = analyzer;      // Swap implementation at runtime
+        this.sentimentAnalyzer.initialize();
+        notifyListeners();
     }
 }</code></pre>
 
-<p><strong>Composition vs Inheritance:</strong> Use inheritance (IS-A) for hierarchies; use composition (HAS-A) for flexibility and runtime swapping.</p>
+<p><strong>Composition vs Inheritance:</strong></p>
+<ul>
+<li><strong>Inheritance (IS-A):</strong> Post IS-A Serializable, YouTubePost IS-A Post. For class hierarchies.</li>
+<li><strong>Composition (HAS-A):</strong> Model HAS-A SentimentAnalyzer. For flexibility and runtime changes. Preferred over inheritance in most cases.</li>
+</ul>
+
+<p><strong>Benefits:</strong> Runtime behavior swapping (setSentimentAnalyzer), flexibility, avoids deep inheritance hierarchies, easier testing (inject mock objects).</p>
 
 <h3 id="design-patterns">7.2 Advanced Design Patterns</h3>
 
@@ -3175,53 +3372,131 @@ public interface ModelListener { void modelChanged(); }</code></pre>
 
 <p><strong>Purpose:</strong> Separate application into three interconnected components: Model (data and logic), View (presentation), and Controller (user interaction). This enables independent development, testing, and maintenance.</p>
 
-<p><strong>Implementation in System:</strong></p>
+<h5>MODEL COMPONENT (Package: com.humanitarian.logistics.ui)</h5>
 
 <pre><code class="language-java">// MODEL: Contains data and business logic
+// Source: Model.java (lines 20-112)
 public class Model {
-    private List&lt;Post&gt; posts = new ArrayList&lt;&gt;();
+    private List&lt;Post&gt; posts;
     private SentimentAnalyzer sentimentAnalyzer;
-    private List&lt;ModelListener&gt; listeners = new ArrayList&lt;&gt;();
+    private DatabaseManager dbManager;
+    private DataPersistenceManager persistenceManager;
+    private List&lt;ModelListener&gt; listeners;
     
     public void addPost(Post post) {
+        // Business logic: classify relief items
+        if (post.getReliefItem() == null) {
+            categoryClassifier.classifyPost(post);
+        }
+
         // Business logic: analyze sentiment before adding
-        Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(post.getContent());
-        post.setSentiment(sentiment);
-        posts.add(post);
+        if (post.getSentiment() == null && sentimentAnalyzer != null) {
+            Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(post.getContent());
+            post.setSentiment(sentiment);
+        }
+
+        // Business logic: process comments
+        for (Comment comment : post.getComments()) {
+            if (comment.getReliefItem() == null) {
+                ReliefItem.Category category = categoryClassifier.classifyText(comment.getContent());
+                if (category != null) {
+                    comment.setReliefItem(new ReliefItem(category, "ML-classified", 3));
+                }
+            }
+            if (comment.getSentiment() == null && sentimentAnalyzer != null) {
+                Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(comment.getContent());
+                comment.setSentiment(sentiment);
+            }
+        }
+
+        this.posts.add(post);
+        dbManager.savePost(post);
         
         // Notify all listeners of change
         notifyListeners();
     }
     
+    public void addModelListener(ModelListener listener) {
+        listeners.add(listener);
+    }
+
     private void notifyListeners() {
         for (ModelListener listener : listeners) {
             listener.modelChanged();  // Observer pattern callback
         }
     }
-}
+}</code></pre>
 
-// VIEW: Displays data from Model
+<h5>VIEW COMPONENT (Package: com.humanitarian.logistics.ui)</h5>
+
+<pre><code class="language-java">// VIEW: Displays data from Model and implements ModelListener for updates
+// Source: View.java (lines 20-80)
 public class View extends JFrame implements ModelListener {
-    private AdvancedAnalysisPanel analysisPanel;
+    private Model model;
+    private JTabbedPane mainTabbedPane;
+    private AdvancedAnalysisPanel advancedAnalysisPanel;
     private CommentManagementPanel commentPanel;
+    private CrawlControlPanel crawlPanel;
+    private DataCollectionPanel dataCollectionPanel;
     
     public View(Model model) {
         this.model = model;
-        // Register as observer to be notified of changes
+        // Register as observer to be notified of Model changes
         model.addModelListener(this);
+        initializeUI();
+    }
+
+    private void initializeUI() {
+        setTitle("🚨 Humanitarian Logistics Analysis System v2.0");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(1600, 950);
+        setLocationRelativeTo(null);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+
+        // Initialize UI panels
+        mainTabbedPane = new JTabbedPane();
+        advancedAnalysisPanel = new AdvancedAnalysisPanel(model);
+        mainTabbedPane.addTab("📊 Analysis", advancedAnalysisPanel);
+
+        commentPanel = new CommentManagementPanel(model);
+        mainTabbedPane.addTab("💬 Comments Manager", commentPanel);
+
+        crawlPanel = new CrawlControlPanel(model);
+        mainTabbedPane.addTab("🌐 Crawl Web", crawlPanel);
+
+        dataCollectionPanel = new DataCollectionPanel(model);
+        mainTabbedPane.addTab("✏️  Data Entry", dataCollectionPanel);
+        
+        // ... add panels to main layout ...
+        this.setVisible(true);
     }
     
     @Override
     public void modelChanged() {
-        // React to data changes: update UI on EDT
+        // React to Model data changes: update UI on EDT
         SwingUtilities.invokeLater(() -> {
-            analysisPanel.refresh();
+            advancedAnalysisPanel.refresh();
             commentPanel.refreshCommentTable();
+            statusLabel.setText("Updated");
         });
     }
 }</code></pre>
 
-<p><strong>Benefits:</strong> Separation of concerns (Model ≠ View), testability (test Model without UI), multiple views (same Model can serve multiple Views), loose coupling.</p>
+<h5>OBSERVER INTERFACE (Package: com.humanitarian.logistics.ui)</h5>
+
+<pre><code class="language-java">// OBSERVER LISTENER: Defines contract for components watching Model changes
+public interface ModelListener {
+    void modelChanged();  // Called when Model state changes
+}</code></pre>
+
+<p><strong>MVC Architecture Benefits:</strong></p>
+<ul>
+<li><strong>Separation of Concerns:</strong> Model manages data/logic (database, sentiment analysis, classification), View displays UI (Swing components), Controller handles user interaction (panels, listeners)</li>
+<li><strong>Testability:</strong> Test Model independently without UI, test UI rendering separately</li>
+<li><strong>Multiple Views:</strong> Same Model data can serve multiple View implementations (Swing, web, CLI)</li>
+<li><strong>Loose Coupling:</strong> View depends on ModelListener interface, not concrete Model implementation</li>
+<li><strong>Reactive Updates:</strong> View automatically updates when Model notifies via Observer pattern</li>
+</ul>
 
 <h4 id="strategy">7.2.2 Strategy Pattern - Runtime Algorithm Selection</h4>
 
@@ -3229,123 +3504,353 @@ public class View extends JFrame implements ModelListener {
 
 <p><strong>Application in System:</strong></p>
 
+<h5>STRATEGY INTERFACE (Package: com.humanitarian.logistics.sentiment)</h5>
+
 <pre><code class="language-java">// STRATEGY INTERFACE: Abstract algorithm definition
+// Source: SentimentAnalyzer.java
 public interface SentimentAnalyzer {
     Sentiment analyzeSentiment(String text);
+    Sentiment[] analyzeSentimentBatch(String[] texts);
     String getModelName();
     void initialize();
     void shutdown();
-}
+}</code></pre>
 
-// CONCRETE STRATEGY 1: Rule-based approach
+<h5>CONCRETE STRATEGY 1: Rule-Based Sentiment Analysis (Package: com.humanitarian.logistics.sentiment)</h5>
+
+<pre><code class="language-java">// CONCRETE STRATEGY 1: Keyword-based approach
+// Source: EnhancedSentimentAnalyzer.java (lines 6-113)
 public class EnhancedSentimentAnalyzer implements SentimentAnalyzer {
-    private static final String[] POSITIVE_WORDS_EN = {...};
-    private static final String[] NEGATIVE_WORDS_EN = {...};
-    
+    private static final String[] POSITIVE_WORDS_EN = {
+            "good", "great", "excellent", "happy", "love", "thank", "thanks",
+            "appreciate", "support", "help", "aid", "relief", "better", "improved",
+            "success", "wonderful", "fantastic", "amazing", "grateful"
+    };
+
+    private static final String[] NEGATIVE_WORDS_EN = {
+            "bad", "poor", "terrible", "sad", "hate", "angry", "upset", "frustrated",
+            "struggle", "difficult", "problem", "issue", "lack", "missing", "needed",
+            "fail", "failure", "disaster", "crisis", "emergency", "suffering", "pain"
+    };
+
     @Override
     public Sentiment analyzeSentiment(String text) {
-        // Keyword matching strategy
-        int positiveCount = countMatches(text, POSITIVE_WORDS_EN);
-        int negativeCount = countMatches(text, NEGATIVE_WORDS_EN);
-        return new Sentiment(positiveCount > negativeCount ? POSITIVE : NEGATIVE);
-    }
-}
-
-// CONCRETE STRATEGY 2: ML-based approach (Python backend)
-public class PythonSentimentAnalyzer implements SentimentAnalyzer {
-    @Override
-    public Sentiment analyzeSentiment(String text) {
-        // Call Python ML service via HTTP
-        return callPythonService(text);
-    }
-}
-
-// CLIENT: Uses strategy via interface, not concrete class
-public class Model {
-    private SentimentAnalyzer strategy;  // Strategy reference
-    
-    public void setSentimentAnalyzer(SentimentAnalyzer analyzer) {
-        // Switch algorithm at runtime
-        if (this.strategy != null) {
-            this.strategy.shutdown();
+        if (text == null || text.trim().isEmpty()) {
+            return new Sentiment(Sentiment.SentimentType.NEUTRAL, 0.0, "");
         }
-        this.strategy = analyzer;
-        this.strategy.initialize();
-    }
-    
-    public void addPost(Post post) {
-        // Use current strategy - client doesn't know which one
-        Sentiment sentiment = strategy.analyzeSentiment(post.getContent());
-        post.setSentiment(sentiment);
-        posts.add(post);
-        notifyListeners();
-    }
-}
 
-// ADD NEW STRATEGY without changing existing code:
-public class CustomSentimentAnalyzer implements SentimentAnalyzer {
-    public Sentiment analyzeSentiment(String text) { 
-        // Custom algorithm implementation
-        return new Sentiment(...);
+        String lowerText = text.toLowerCase();
+        
+        int positiveCount = countMatches(lowerText, POSITIVE_WORDS_EN) + 
+                           countMatches(lowerText, POSITIVE_WORDS_VI);
+        int negativeCount = countMatches(lowerText, NEGATIVE_WORDS_EN) + 
+                           countMatches(lowerText, NEGATIVE_WORDS_VI);
+
+        Sentiment.SentimentType type;
+        double confidence;
+
+        if (positiveCount > negativeCount) {
+            type = Sentiment.SentimentType.POSITIVE;
+            confidence = Math.min(0.99, 0.6 + (positiveCount * 0.15));
+        } else if (negativeCount > positiveCount) {
+            type = Sentiment.SentimentType.NEGATIVE;
+            confidence = Math.min(0.99, 0.6 + (negativeCount * 0.15));
+        } else {
+            type = Sentiment.SentimentType.NEUTRAL;
+            confidence = positiveCount == 0 && negativeCount == 0 ? 0.4 : 0.5;
+        }
+
+        return new Sentiment(type, confidence, text);
+    }
+
+    @Override
+    public void initialize() {
+        System.out.println("✓ EnhancedSentimentAnalyzer initialized with bilingual support");
+    }
+
+    @Override
+    public void shutdown() {
+        System.out.println("EnhancedSentimentAnalyzer shutdown");
     }
 }</code></pre>
 
-<p><strong>Applications in System:</strong> Sentiment Analysis (multiple analyzers), Data Crawling (YouTubeCrawler vs MockDataCrawler), Analysis Modules (TimeSeriesSentimentModule vs SatisfactionAnalysisModule).</p>
+<h5>CONCRETE STRATEGY 2: ML-Based Sentiment Analysis via Python API (Package: com.humanitarian.logistics.sentiment)</h5>
 
-<p><strong>Benefits:</strong> Runtime algorithm switching without modifying client code, easy to add new strategies, isolates algorithm details from client logic.</p>
+<pre><code class="language-java">// CONCRETE STRATEGY 2: Machine Learning approach via HTTP API
+// Source: PythonSentimentAnalyzer.java (lines 13-90)
+public class PythonSentimentAnalyzer implements SentimentAnalyzer {
+    private final String apiUrl;
+    private final String modelName;
+    private CloseableHttpClient httpClient;
+    private boolean initialized;
+
+    public PythonSentimentAnalyzer(String apiUrl, String modelName) {
+        this.apiUrl = apiUrl;
+        this.modelName = modelName;
+        this.initialized = false;
+    }
+
+    @Override
+    public void initialize() {
+        this.httpClient = HttpClients.createDefault();
+        this.initialized = true;
+        System.out.println("PythonSentimentAnalyzer initialized with API: " + apiUrl);
+    }
+
+    @Override
+    public Sentiment analyzeSentiment(String text) {
+        if (!initialized) {
+            initialize();
+        }
+
+        if (text == null || text.trim().isEmpty()) {
+            return new Sentiment(Sentiment.SentimentType.NEUTRAL, 0.0, "");
+        }
+
+        try {
+            // Build HTTP request to Python backend
+            HttpPost post = new HttpPost(apiUrl + "/analyze");
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("text", text);
+            StringEntity entity = new StringEntity(requestBody.toString(), "UTF-8");
+            entity.setContentType("application/json; charset=UTF-8");
+            post.setEntity(entity);
+            post.setHeader("Content-Type", "application/json");
+
+            // Execute HTTP request and parse response
+            try (CloseableHttpResponse response = httpClient.execute(post)) {
+                BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(response.getEntity().getContent())
+                );
+                StringBuilder result = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    result.append(line);
+                }
+                reader.close();
+
+                String responseText = result.toString();
+                JSONObject responseJson = new JSONObject(responseText);
+                
+                if (responseJson.has("error")) {
+                    System.err.println("✗ Error analyzing sentiment: " + responseJson.getString("error"));
+                    return new Sentiment(Sentiment.SentimentType.NEUTRAL, 0.5, text);
+                }
+
+                // Parse sentiment and confidence from API response
+                String sentiment = responseJson.getString("sentiment");
+                double confidence = responseJson.has("confidence") ? 
+                    responseJson.getDouble("confidence") : 0.5;
+
+                Sentiment.SentimentType type = Sentiment.SentimentType.valueOf(sentiment.toUpperCase());
+                System.out.println("✓ Sentiment analyzed: " + sentiment + 
+                    " (confidence: " + String.format("%.2f%%", confidence * 100) + ")");
+                return new Sentiment(type, confidence, text);
+            }
+        } catch (Exception e) {
+            System.err.println("✗ Error analyzing sentiment: " + e.getMessage());
+            return new Sentiment(Sentiment.SentimentType.NEUTRAL, 0.5, text);
+        }
+    }
+
+    @Override
+    public void shutdown() {
+        try {
+            if (httpClient != null) {
+                httpClient.close();
+            }
+            initialized = false;
+        } catch (Exception e) {
+            System.err.println("Error shutting down analyzer: " + e.getMessage());
+        }
+    }
+}</code></pre>
+
+<h5>CLIENT: Runtime Strategy Selection (Package: com.humanitarian.logistics.ui)</h5>
+
+<pre><code class="language-java">// CLIENT: Uses strategy via interface, not concrete class
+// Source: Model.java (lines 46-51, 72-93)
+public class Model {
+    private SentimentAnalyzer sentimentAnalyzer;  // Strategy reference
+    
+    public void setSentimentAnalyzer(SentimentAnalyzer analyzer) {
+        // Switch algorithm at runtime WITHOUT changing client code
+        if (this.sentimentAnalyzer != null) {
+            this.sentimentAnalyzer.shutdown();
+        }
+        this.sentimentAnalyzer = analyzer;
+        this.sentimentAnalyzer.initialize();
+    }
+    
+    public void addPost(Post post) {
+        // Use current strategy - client doesn't know which implementation
+        if (post.getReliefItem() == null) {
+            categoryClassifier.classifyPost(post);
+        }
+
+        if (post.getSentiment() == null && sentimentAnalyzer != null) {
+            // Strategy selection: works with ANY SentimentAnalyzer implementation
+            Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(post.getContent());
+            post.setSentiment(sentiment);
+        }
+
+        for (Comment comment : post.getComments()) {
+            if (comment.getSentiment() == null && sentimentAnalyzer != null) {
+                Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(comment.getContent());
+                comment.setSentiment(sentiment);
+            }
+        }
+
+        this.posts.add(post);
+        notifyListeners();
+    }
+}</code></pre>
+
+<p><strong>Key Strategy Pattern Features:</strong></p>
+<ul>
+<li><strong>Strategy Interface:</strong> SentimentAnalyzer defines contract that all sentiment algorithms must implement</li>
+<li><strong>Concrete Strategies:</strong> EnhancedSentimentAnalyzer (keyword-matching) and PythonSentimentAnalyzer (ML via HTTP API) are interchangeable implementations</li>
+<li><strong>Runtime Selection:</strong> Model.setSentimentAnalyzer() switches algorithms at runtime without code changes</li>
+<li><strong>Client Agnostic:</strong> Model.addPost() works with ANY SentimentAnalyzer implementation - changes algorithm behavior without touching client code</li>
+</ul>
+
+<p><strong>Applications in System:</strong> Sentiment Analysis (EnhancedSentimentAnalyzer vs PythonSentimentAnalyzer), Data Crawling (YouTubeCrawler vs MockDataCrawler via CrawlerRegistry), Analysis Modules (TimeSeriesSentimentModule vs SatisfactionAnalysisModule).</p>
+
+<p><strong>Benefits:</strong> Runtime algorithm switching without modifying client code, easy to add new strategies (just implement SentimentAnalyzer), isolates algorithm details from client logic, enables A/B testing of different sentiment approaches.</p>
 
 <h4 id="factory-registry">7.2.3 Factory and Registry Pattern - Pluggable Architecture</h4>
 
 <p><strong>Purpose:</strong> Factory Pattern creates objects without specifying exact classes. Registry Pattern maintains a registry of available implementations, enabling runtime discovery and plugin-like architecture.</p>
 
-<p><strong>Implementation in System:</strong></p>
+<h5>FACTORY INTERFACE (Package: com.humanitarian.logistics.crawler)</h5>
 
-<pre><code class="language-java">// REGISTRY: Central location for available crawlers
+<pre><code class="language-java">// FACTORY INTERFACE: Defines how to create crawlers
+// Source: CrawlerRegistry.java (lines 17-20)
+@FunctionalInterface
+public interface CrawlerFactory {
+    DataCrawler create();  // Creates a new crawler instance
+}</code></pre>
+
+<h5>REGISTRY: Central Location for Available Crawlers (Package: com.humanitarian.logistics.crawler)</h5>
+
+<pre><code class="language-java">// REGISTRY: Central location for available crawler factories
+// Source: CrawlerRegistry.java (lines 11-104)
 public class CrawlerRegistry {
-    // Singleton instance
+    private static final Logger LOGGER = Logger.getLogger(CrawlerRegistry.class.getName());
     private static final CrawlerRegistry INSTANCE = new CrawlerRegistry();
     
-    // Map of crawler factories: name → create function
+    // Map of crawler factories: name → factory function
     private final Map&lt;String, CrawlerFactory&gt; crawlers = new LinkedHashMap&lt;&gt;();
     
-    // FACTORY INTERFACE: Defines how to create crawlers
-    @FunctionalInterface
-    public interface CrawlerFactory {
-        DataCrawler create();  // Creates a new crawler instance
+    public static class CrawlerConfig {
+        public final String name;
+        public final String displayName;
+        public final String description;
+        public final CrawlerFactory factory;
+        public final boolean requiresInitialization;
+        public final boolean supportsKeywordSearch;
+        public final boolean supportsUrlCrawl;
+        
+        public CrawlerConfig(String name, String displayName, String description, 
+                            CrawlerFactory factory, boolean requiresInit, 
+                            boolean supportsKeywords, boolean supportsUrl) {
+            this.name = name;
+            this.displayName = displayName;
+            this.description = description;
+            this.factory = factory;
+            this.requiresInitialization = requiresInit;
+            this.supportsKeywordSearch = supportsKeywords;
+            this.supportsUrlCrawl = supportsUrl;
+        }
     }
     
-    public static CrawlerRegistry getInstance() { 
-        return INSTANCE; 
+    private final Map&lt;String, CrawlerConfig&gt; crawlerConfigs = new LinkedHashMap&lt;&gt;();
+    
+    private CrawlerRegistry() {}
+    
+    public static CrawlerRegistry getInstance() {
+        return INSTANCE;
     }
     
-    // REGISTRATION: Add new crawler factory
-    public void registerCrawler(String name, CrawlerFactory factory) {
-        crawlers.put(name, factory);
+    // REGISTRATION: Add new crawler factory with metadata
+    public void registerCrawler(CrawlerConfig config) {
+        crawlers.put(config.name, config.factory);
+        crawlerConfigs.put(config.name, config);
+        LOGGER.info("✓ Registered crawler: " + config.displayName);
     }
     
-    // FACTORY METHOD: Create crawler by name
+    // FACTORY METHOD: Create crawler by name without knowing concrete type
     public DataCrawler createCrawler(String crawlerName) {
         CrawlerFactory factory = crawlers.get(crawlerName);
-        return factory != null ? factory.create() : null;
+        if (factory == null) {
+            throw new IllegalArgumentException("Unknown crawler: " + crawlerName);
+        }
+        return factory.create();  // Factory creates instance
     }
-}
+    
+    public List&lt;String&gt; getCrawlerNames() {
+        return new ArrayList&lt;&gt;(crawlers.keySet());
+    }
+    
+    public List&lt;String&gt; getCrawlerDisplayNames() {
+        return crawlerConfigs.values().stream()
+            .map(c -> c.displayName)
+            .collect(Collectors.toList());
+    }
+    
+    public CrawlerConfig getConfig(String crawlerName) {
+        return crawlerConfigs.get(crawlerName);
+    }
+}</code></pre>
 
-// CLIENT: Uses registry to get crawlers without knowing their types
+<h5>CLIENT: Uses Registry to Create Crawlers (Package: com.humanitarian.logistics.crawler)</h5>
+
+<pre><code class="language-java">// CLIENT: Uses registry to get crawlers without knowing their concrete types
+// Source: CrawlerManager.java (lines 6-31)
 public class CrawlerManager {
+    private static final Logger LOGGER = Logger.getLogger(CrawlerManager.class.getName());
+    
     public static void initializeCrawlers() {
         CrawlerRegistry registry = CrawlerRegistry.getInstance();
         
-        // Register YouTube crawler factory
-        registry.registerCrawler("YOUTUBE", YouTubeCrawler::new);
+        // Register YouTube crawler factory - Constructor reference creates instances
+        registry.registerCrawler(
+            new CrawlerRegistry.CrawlerConfig(
+                "YOUTUBE",
+                "YouTube",
+                "Crawl videos and comments from YouTube using Selenium",
+                YouTubeCrawler::new,        // FACTORY: Constructor reference
+                true,                        // Requires initialization
+                true,                        // Supports keyword search
+                true                         // Supports URL crawl
+            )
+        );
         
         // Register Mock crawler factory
-        registry.registerCrawler("MOCK", MockDataCrawler::new);
+        registry.registerCrawler(
+            new CrawlerRegistry.CrawlerConfig(
+                "MOCK",
+                "Sample/Mock Data",
+                "Generate sample data for testing (no real crawling)",
+                MockDataCrawler::new,        // FACTORY: Constructor reference
+                false,
+                true,
+                false
+            )
+        );
+        
+        LOGGER.info("✓ All crawlers initialized: " + registry.getCrawlerDisplayNames());
     }
 }
 
-// USAGE: Get crawler by name without creating directly
-DataCrawler crawler = CrawlerRegistry.getInstance().createCrawler("YOUTUBE");
-List&lt;Post&gt; results = crawler.crawlPosts(keywords, hashtags, limit);</code></pre>
+// USAGE: Create crawler by name without knowing concrete type
+CrawlerRegistry registry = CrawlerRegistry.getInstance();
+DataCrawler youtubeCrawler = registry.createCrawler("YOUTUBE");  // Factory creates YouTubeCrawler instance
+DataCrawler mockCrawler = registry.createCrawler("MOCK");         // Factory creates MockDataCrawler instance
+
+// List all available crawlers
+List&lt;String&gt; names = registry.getCrawlerDisplayNames();  // ["YouTube", "Sample/Mock Data"]
+</code></pre>
 
 <p><strong>Advantages:</strong> Plugin architecture (add crawlers without modifying existing code), runtime discovery (list available crawlers), decoupling (client doesn't know concrete classes), dynamic instantiation.</p>
 
@@ -3355,69 +3860,116 @@ List&lt;Post&gt; results = crawler.crawlPosts(keywords, hashtags, limit);</code>
 
 <p><strong>Purpose:</strong> Define a one-to-many relationship where when one object's state changes, all dependents are automatically notified and updated. This implements loose coupling between Subject and Observers.</p>
 
-<p><strong>Implementation in System:</strong></p>
+<h5>OBSERVER INTERFACE (Package: com.humanitarian.logistics.ui)</h5>
 
 <pre><code class="language-java">// OBSERVER INTERFACE: What observers must implement
+// Source: ModelListener.java
 public interface ModelListener {
     void modelChanged();  // Called when Model state changes
-}
+}</code></pre>
 
-// SUBJECT: Model that notifies observers
+<h5>SUBJECT: Model with Observer Notifications (Package: com.humanitarian.logistics.ui)</h5>
+
+<pre><code class="language-java">// SUBJECT: Model that maintains observers and notifies them of changes
+// Source: Model.java (lines 20-112, 216-222)
 public class Model {
-    private List&lt;Post&gt; posts = new ArrayList&lt;&gt;();
-    // List of observers watching this model
-    private List&lt;ModelListener&gt; listeners = new ArrayList&lt;&gt;();
+    private List&lt;Post&gt; posts;
+    private SentimentAnalyzer sentimentAnalyzer;
+    private List&lt;ModelListener&gt; listeners;  // List of observers
     
-    // ATTACH observer
-    public void addModelListener(ModelListener listener) { 
-        listeners.add(listener); 
+    // ATTACH: Add observer to listen for changes
+    public void addModelListener(ModelListener listener) {
+        listeners.add(listener);
     }
-    
+
     // METHOD that changes state
     public void addPost(Post post) {
-        Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(post.getContent());
-        post.setSentiment(sentiment);
-        posts.add(post);
+        if (post.getReliefItem() == null) {
+            categoryClassifier.classifyPost(post);
+        }
+
+        // Sentiment analysis as business logic
+        if (post.getSentiment() == null && sentimentAnalyzer != null) {
+            Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(post.getContent());
+            post.setSentiment(sentiment);
+        }
+
+        // Process comments
+        for (Comment comment : post.getComments()) {
+            if (comment.getSentiment() == null && sentimentAnalyzer != null) {
+                Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(comment.getContent());
+                comment.setSentiment(sentiment);
+            }
+        }
+
+        this.posts.add(post);
+        dbManager.savePost(post);
         
         // NOTIFY: When state changes, notify all observers
         notifyListeners();
     }
     
-    // NOTIFY all observers
+    // NOTIFY: Broadcast change to all observers
     private void notifyListeners() {
         for (ModelListener listener : listeners) {
-            listener.modelChanged();  // Each observer reacts
+            listener.modelChanged();  // Each observer reacts to notification
         }
     }
-}
+}</code></pre>
 
-// CONCRETE OBSERVER 1: View updates UI
+<h5>CONCRETE OBSERVER: View Listens to Model Changes (Package: com.humanitarian.logistics.ui)</h5>
+
+<pre><code class="language-java">// CONCRETE OBSERVER: View receives and reacts to Model notifications
+// Source: View.java (lines 20-80, 160-169)
 public class View extends JFrame implements ModelListener {
+    private Model model;
+    private JTabbedPane mainTabbedPane;
+    private AdvancedAnalysisPanel advancedAnalysisPanel;
+    private CommentManagementPanel commentPanel;
+    private JLabel statusLabel;
+
     public View(Model model) {
         this.model = model;
-        // REGISTER as observer
+        // REGISTER as observer: subscribe to Model changes
         model.addModelListener(this);
+        initializeUI();
+    }
+
+    private void initializeUI() {
+        setTitle("🚨 Humanitarian Logistics Analysis System v2.0");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(1600, 950);
+        
+        mainTabbedPane = new JTabbedPane();
+        advancedAnalysisPanel = new AdvancedAnalysisPanel(model);
+        mainTabbedPane.addTab("📊 Analysis", advancedAnalysisPanel);
+
+        commentPanel = new CommentManagementPanel(model);
+        mainTabbedPane.addTab("💬 Comments Manager", commentPanel);
+        
+        // ... setup rest of UI ...
     }
     
     @Override
     public void modelChanged() {
-        // REACT to notification: refresh UI
+        // REACT to Model notification: refresh UI components
         SwingUtilities.invokeLater(() -> {
-            analysisPanel.refresh();
-            commentPanel.refreshCommentTable();
-            statusLabel.setText("Updated");
+            // Update all UI panels with new data
+            advancedAnalysisPanel.refresh();     // Refresh analysis charts
+            commentPanel.refreshCommentTable();  // Refresh comment table
+            statusLabel.setText("✓ Updated");    // Show update status
+            System.out.println("View notified: Model changed");
         });
     }
-}
-
-// CONCRETE OBSERVER 2: Logger tracks changes
-public class ModelChangeLogger implements ModelListener {
-    @Override
-    public void modelChanged() {
-        // REACT to notification: log the event
-        LOGGER.info("Model changed at " + LocalDateTime.now());
-    }
 }</code></pre>
+
+<p><strong>How Observer Pattern Works:</strong></p>
+<ul>
+<li><strong>Subject (Model):</strong> Maintains list of observers, calls notifyListeners() when state changes (addPost())</li>
+<li><strong>Observer Interface (ModelListener):</strong> Defines contract - modelChanged() method that gets called</li>
+<li><strong>Concrete Observers (View):</strong> Implement ModelListener, register via addModelListener(), react to changes in modelChanged()</li>
+<li><strong>Decoupling:</strong> Model doesn't know details of View implementation, only that observers implement ModelListener interface</li>
+</ul>
 
 <p><strong>Benefits:</strong> Loose coupling (Subject doesn't know observer details), dynamic subscriptions (add/remove observers at runtime), automatic synchronization (all observers notified together), event-driven design (reactive updates without polling).</p>
 
@@ -3425,55 +3977,106 @@ public class ModelChangeLogger implements ModelListener {
 
 <p><strong>Purpose:</strong> Ensure a class has only ONE instance and provide global access to it. Prevents multiple instances from causing state conflicts and resource wastage.</p>
 
-<p><strong>Implementation in System:</strong></p>
+<h5>EAGER SINGLETON (Class Load Time) - Package: com.humanitarian.logistics.crawler</h5>
 
-<pre><code class="language-java">// SINGLETON: Private constructor prevents instantiation
+<pre><code class="language-java">// EAGER SINGLETON: Instance created at class load time
+// Source: CrawlerRegistry.java (lines 12-48)
 public class CrawlerRegistry {
     // Single static instance created at class load time
     private static final CrawlerRegistry INSTANCE = new CrawlerRegistry();
+    
+    private final Map&lt;String, CrawlerFactory&gt; crawlers = new LinkedHashMap&lt;&gt;();
+    
+    @FunctionalInterface
+    public interface CrawlerFactory {
+        DataCrawler create();
+    }
+    
+    public static class CrawlerConfig {
+        public final String name;
+        public final String displayName;
+        public final String description;
+        public final CrawlerFactory factory;
+        public final boolean requiresInitialization;
+        public final boolean supportsKeywordSearch;
+        public final boolean supportsUrlCrawl;
+        
+        public CrawlerConfig(String name, String displayName, String description, 
+                            CrawlerFactory factory, boolean requiresInit, 
+                            boolean supportsKeywords, boolean supportsUrl) {
+            this.name = name;
+            this.displayName = displayName;
+            this.description = description;
+            this.factory = factory;
+            this.requiresInitialization = requiresInit;
+            this.supportsKeywordSearch = supportsKeywords;
+            this.supportsUrlCrawl = supportsUrl;
+        }
+    }
+    
+    private final Map&lt;String, CrawlerConfig&gt; crawlerConfigs = new LinkedHashMap&lt;&gt;();
     
     // Private constructor: prevents new CrawlerRegistry()
     private CrawlerRegistry() {}
     
     // Global access point: always returns same instance
-    public static CrawlerRegistry getInstance() { 
-        return INSTANCE; 
+    public static CrawlerRegistry getInstance() {
+        return INSTANCE;
     }
     
-    private final Map&lt;String, CrawlerFactory&gt; crawlers = new LinkedHashMap&lt;&gt;();
-    
-    public void registerCrawler(String name, CrawlerFactory factory) {
-        crawlers.put(name, factory);
+    public void registerCrawler(CrawlerConfig config) {
+        crawlers.put(config.name, config.factory);
+        crawlerConfigs.put(config.name, config);
     }
-}
+}</code></pre>
 
-// SINGLETON with initialization
-public class DisasterManager {
-    private static final DisasterManager INSTANCE = new DisasterManager();
-    
-    private DisasterManager() { 
-        disasterTypes = new HashMap&lt;&gt;();
-        // Initialize disaster types
-        disasterTypes.put("EARTHQUAKE", new DisasterType("Earthquake", "Sudden ground movement"));
-        disasterTypes.put("FLOOD", new DisasterType("Flood", "Water overflow"));
-    }
-    
-    public static DisasterManager getInstance() { 
-        return INSTANCE; 
-    }
-    
-    public DisasterType getDisasterType(String key) {
-        return disasterTypes.get(key);
-    }
-}
+<h5>LAZY SINGLETON (Double-Checked Locking) - Package: com.humanitarian.logistics.database</h5>
 
-// USAGE: Always same instance
-CrawlerRegistry registry1 = CrawlerRegistry.getInstance();
-CrawlerRegistry registry2 = CrawlerRegistry.getInstance();
-assert registry1 == registry2;  // True: same object
-</code></pre>
+<pre><code class="language-java">// LAZY SINGLETON: Instance created on first access with thread-safety
+// Source: DatabaseManager.java (lines 19-42)
+public class DatabaseManager {
+    private static DatabaseManager instance;
+    private static final Object lock = new Object();
+    
+    private String dbUrl;
+    private String dbFilePath;
+    private Connection connection;
+    private boolean initialized = false;
 
-<p><strong>Benefits:</strong> Global access point, prevents multiple instances, thread-safe (with static initialization), controlled state, resource efficiency.</p>
+    public DatabaseManager() {
+        // Empty constructor - initialization deferred to lazy loading
+    }
+    
+    // LAZY SINGLETON: Double-checked locking pattern
+    public static DatabaseManager getInstance() {
+        if (instance == null) {
+            synchronized (lock) {
+                if (instance == null) {
+                    instance = new DatabaseManager();
+                    // Lazy initialization: database connection created on first access
+                    instance.initialize();
+                }
+            }
+        }
+        return instance;
+    }
+
+    private void initialize() {
+        // JDBC connection initialization happens here (deferred)
+        String dbFilePath = getDbFilePath();
+        this.dbUrl = "jdbc:sqlite:" + dbFilePath;
+        System.out.println("✓ DatabaseManager initialized with: " + this.dbUrl);
+        initialized = true;
+    }
+}</code></pre>
+
+<p><strong>Singleton Pattern Implementations in System:</strong></p>
+<ul>
+<li><strong>CrawlerRegistry (Eager Singleton):</strong> Static final field ensures single instance created at class load time. Simple, thread-safe by design, but instance always created even if never used.</li>
+<li><strong>DatabaseManager (Lazy Singleton):</strong> Double-checked locking ensures instance created only on first getInstance() call. Thread-safe with synchronized block and null-check inside lock. Defers initialization cost until actually needed.</li>
+</ul>
+
+<p><strong>Benefits:</strong> Global access point, prevents multiple instances (avoids state conflicts), thread-safe initialization, controlled singleton lifecycle.</p>
 
 <h4 id="facade">7.2.6 Facade Pattern - Simplified Complex Operations</h4>
 
@@ -3481,66 +4084,166 @@ assert registry1 == registry2;  // True: same object
 
 <p><strong>Implementation in System:</strong></p>
 
-<pre><code class="language-java">// SUBSYSTEM 1: Database operations (complex)
-public class DatabaseManager { /* 200+ lines of JDBC code */ }
+<h5>FACADE: Database Loading (Package: com.humanitarian.logistics.database)</h5>
 
-// SUBSYSTEM 2: File I/O (complex)
-public class DataPersistenceManager { /* Serialization logic */ }
-
-// FACADE: Simplified interface hiding complexity
+<pre><code class="language-java">// FACADE: Simplified interface hiding complex database operations
+// Source: DatabaseLoader.java (lines 33-102)
 public class DatabaseLoader {
-    // Simple public method hides all complexity
+    // SIMPLE PUBLIC METHOD: Client interface hides ALL complexity
     public static void loadOurDatabase(Model model) {
         if (model == null) {
             throw new IllegalArgumentException("Model cannot be null");
         }
         
-        // Internal details hidden from client:
+        // From client's perspective: just one method call to load data
         model.getPosts().clear();
         
-        // Client doesn't know about these complex operations:
-        loadFromDevUIDatabase(model);      // Hidden: reads from curated DB
+        // INTERNAL DETAILS HIDDEN: Client doesn't know about:
+        // - JDBC connections and ResultSet parsing
+        // - Multiple database files (curated vs user)
+        // - Transaction management and error handling
+        loadFromDevUIDatabase(model);        // Hidden: reads from curated DB
         saveLoadedDataToUserDatabase(model); // Hidden: persists to user DB
     }
     
-    // PRIVATE: Complex database reading logic hidden
+    // PRIVATE: Complex JDBC reading logic hidden from client
     private static void loadFromDevUIDatabase(Model model) {
-        DatabaseManager dbManager = new DatabaseManager();
-        try (ResultSet rs = dbManager.queryPosts()) {
-            while (rs.next()) {
-                // Parse result, create Post object, add to model
-                Post post = parsePost(rs);
-                model.addPost(post);
+        try {
+            Class.forName("org.sqlite.JDBC");
+            String dbPath = getDevUIDbPath();
+            
+            File dbFile = new File(dbPath);
+            if (!dbFile.exists()) {
+                System.out.println("Database file not found: " + dbPath);
+                return;
             }
+
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery("SELECT * FROM posts");
+            
+            // Parse complex ResultSet into domain objects
+            while (rs.next()) {
+                Post post = parsePost(rs);  // Parse each row
+                model.addPost(post);        // Add to model
+            }
+            
+            conn.close();
+        } catch (Exception e) {
+            System.err.println("Error loading from database: " + e.getMessage());
         }
     }
     
-    // PRIVATE: Complex database writing logic hidden
+    // PRIVATE: Complex database writing logic hidden from client
     private static void saveLoadedDataToUserDatabase(Model model) {
-        DatabaseManager userDb = new DatabaseManager("user_db.db");
-        for (Post post : model.getPosts()) {
-            userDb.savePost(post);  // Uses PreparedStatement, transactions, etc.
+        DatabaseManager dbManager = null;
+        try {
+            dbManager = new DatabaseManager();
+            
+            // Complex transaction handling hidden in savePost()
+            for (Post post : model.getPosts()) {
+                dbManager.savePost(post);  // Uses PreparedStatement, type conversion, etc.
+            }
+            dbManager.commit();  // Transaction management hidden
+        } catch (Exception e) {
+            System.err.println("Error saving to user database: " + e.getMessage());
+        } finally {
+            if (dbManager != null) {
+                try {
+                    dbManager.close();
+                } catch (SQLException e) {}
+            }
         }
     }
-}
+}</code></pre>
 
-// ANOTHER FACADE: Crawler initialization
+<h5>FACADE: Persistence Layer (Package: com.humanitarian.logistics.database)</h5>
+
+<pre><code class="language-java">// FACADE: Adapts domain objects ↔ serialization format
+// Source: DataPersistenceManager.java (lines 24-75)
+public class DataPersistenceManager {
+    private String postsFile;
+    private String disastersFile;
+    
+    public DataPersistenceManager() {
+        String dataDir = getDataDir();
+        this.postsFile = dataDir + "/posts.dat";
+        this.disastersFile = dataDir + "/disasters.dat";
+    }
+
+    // SIMPLE METHOD: Hides serialization complexity
+    public void savePosts(List&lt;Post&gt; posts) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(
+                new FileOutputStream(this.postsFile))) {
+            // Hidden: Java serialization, error handling, file I/O details
+            oos.writeObject(new ArrayList&lt;&gt;(posts));
+            System.out.println("✓ Posts saved: " + posts.size() + " items");
+        } catch (IOException e) {
+            System.err.println("Error saving posts: " + e.getMessage());
+        }
+    }
+
+    // SIMPLE METHOD: Deserializes and returns domain objects
+    @SuppressWarnings("unchecked")
+    public List&lt;Post&gt; loadPosts() {
+        File file = new File(this.postsFile);
+        if (!file.exists()) {
+            return new ArrayList&lt;&gt;();
+        }
+
+        try (ObjectInputStream ois = new ObjectInputStream(
+                new FileInputStream(this.postsFile))) {
+            // Hidden: Java deserialization, casting, error handling
+            List&lt;Post&gt; posts = (List&lt;Post&gt;) ois.readObject();
+            System.out.println("✓ Posts loaded: " + posts.size() + " items");
+            return posts;
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Error loading posts: " + e.getMessage());
+            return new ArrayList&lt;&gt;();
+        }
+    }
+}</code></pre>
+
+<h5>FACADE: Crawler Initialization (Package: com.humanitarian.logistics.crawler)</h5>
+
+<pre><code class="language-java">// FACADE: Hides complex crawler registry initialization
+// Source: CrawlerManager.java (lines 6-31)
 public class CrawlerManager {
-    // Single method hides all initialization complexity
+    private static final Logger LOGGER = Logger.getLogger(CrawlerManager.class.getName());
+    
+    // SINGLE METHOD: Hides all crawler registration complexity
     public static void initializeCrawlers() {
         CrawlerRegistry registry = CrawlerRegistry.getInstance();
         
-        // Register YouTube crawler with full configuration
+        // Register YouTube crawler - Hidden: configuration, dependencies, factories
         registry.registerCrawler(
             new CrawlerRegistry.CrawlerConfig(
-                "YOUTUBE", "YouTube",
-                "Crawl videos and comments from YouTube",
-                YouTubeCrawler::new, true, true, true
+                "YOUTUBE",
+                "YouTube",
+                "Crawl videos and comments from YouTube using Selenium",
+                YouTubeCrawler::new,  // Factory reference
+                true,                  // Requires initialization
+                true,                  // Supports keyword search
+                true                   // Supports URL crawl
             )
         );
         
-        // Register Mock crawler
+        // Register Mock crawler - Hidden: test configuration
         registry.registerCrawler(
+            new CrawlerRegistry.CrawlerConfig(
+                "MOCK",
+                "Sample/Mock Data",
+                "Generate sample data for testing (no real crawling)",
+                MockDataCrawler::new,
+                false,
+                true,
+                false
+            )
+        );
+        
+        LOGGER.info("✓ All crawlers initialized: " + registry.getCrawlerDisplayNames());
+    }
+}</code></pre>        registry.registerCrawler(
             new CrawlerRegistry.CrawlerConfig(
                 "MOCK", "Sample/Mock Data",
                 "Generate sample data for testing",
@@ -3699,19 +4402,22 @@ CrawlerManager.initializeCrawlers();     // Simple!
 
 <p><strong>Purpose:</strong> Construct complex objects step by step using a fluent API, avoiding telescoping constructors and making configuration explicit and readable.</p>
 
-<p><strong>Implementation in System:</strong></p>
+<h5>BUILDER IMPLEMENTATION (Package: com.humanitarian.logistics.ui)</h5>
 
-<pre><code class="language-java">// BUILDER CLASS: Constructs complex ChartPanel with configuration
+<pre><code class="language-java">// BUILDER CLASS: Fluent API for constructing ChartPanel with configuration
+// Source: InteractiveChartUtility.java (lines 48-88)
 public class InteractiveChartUtility {
-    // BUILDER FACTORY: Create builder instance
+    
+    // BUILDER FACTORY: Static method returns new builder instance
     public static ChartPanelBuilder builder(ChartPanel chartPanel) {
         return new ChartPanelBuilder(chartPanel);
     }
 
+    // NESTED BUILDER CLASS: Fluent API for chart configuration
     public static class ChartPanelBuilder {
         private ChartPanel chartPanel;
         
-        // CONFIGURATION FIELDS: Build options
+        // CONFIGURATION FIELDS: Stores all optional settings
         private boolean domainZoom = true;
         private boolean rangeZoom = true;
         private boolean mouseWheel = true;
@@ -3721,15 +4427,15 @@ public class InteractiveChartUtility {
             this.chartPanel = chartPanel;
         }
 
-        // BUILDER METHODS: Fluent API (return this for chaining)
+        // BUILDER METHODS: Return 'this' for method chaining (fluent API)
         public ChartPanelBuilder domainZoomable(boolean enabled) {
             this.domainZoom = enabled;
-            return this;  // Enable fluent chaining
+            return this;  // Enable chaining: builder().domainZoomable().rangeZoomable()...
         }
 
         public ChartPanelBuilder rangeZoomable(boolean enabled) {
             this.rangeZoom = enabled;
-            return this;  // Return builder for next method
+            return this;  // Return builder for next method in chain
         }
 
         public ChartPanelBuilder mouseWheelEnabled(boolean enabled) {
@@ -3742,36 +4448,61 @@ public class InteractiveChartUtility {
             return this;
         }
 
-        // BUILD METHOD: Apply all configurations and return result
+        // BUILD METHOD: Apply all accumulated configurations and return final object
         public ChartPanel build() {
-            // Apply all accumulated configurations
+            // Apply all builder configurations to ChartPanel
             chartPanel.setDomainZoomable(domainZoom);
             chartPanel.setRangeZoomable(rangeZoom);
             chartPanel.setMouseWheelEnabled(mouseWheel);
             chartPanel.setDisplayToolTips(tooltips);
-            return chartPanel;  // Return configured object
+            return chartPanel;  // Return fully configured ChartPanel
         }
     }
-}
+    
+    // UTILITY: Make chart interactive (uses builder internally)
+    public static void makeChartInteractive(ChartPanel chartPanel) {
+        if (chartPanel.getChart() != null) {
+            chartPanel.setDomainZoomable(true);
+            chartPanel.setRangeZoomable(true);
+            chartPanel.setMouseWheelEnabled(true);
+        }
+        chartPanel.setDisplayToolTips(true);
+    }
+}</code></pre>
 
-// USAGE: Readable, step-by-step configuration
+<h5>USAGE: Fluent Builder API in Action</h5>
+
+<pre><code class="language-java">// BEFORE BUILDER: Telescoping constructor (unclear which param is what)
+// ChartPanel p = new ChartPanel(chart, true, true, true, true);  // Hard to read!
+
+// AFTER BUILDER: Fluent, self-documenting, easy to modify
 ChartPanel interactive = InteractiveChartUtility.builder(originalChart)
-    .domainZoomable(true)        // Configure domain zoom
-    .rangeZoomable(true)         // Configure range zoom
-    .mouseWheelEnabled(true)     // Configure mouse wheel
-    .tooltipsEnabled(true)       // Configure tooltips
-    .build();                    // Create and return result
+    .domainZoomable(true)        // Enable domain (X-axis) zoom
+    .rangeZoomable(true)         // Enable range (Y-axis) zoom
+    .mouseWheelEnabled(true)     // Enable mouse wheel zoom
+    .tooltipsEnabled(true)       // Show tooltips on hover
+    .build();                    // Create and return configured ChartPanel
 
-// WITHOUT BUILDER (telescoping constructor):
-// ChartPanel p = new ChartPanel(chart, true, true, true, true);  // Unclear!
+// FLEXIBLE: Only configure what you need (rest use defaults)
+ChartPanel simpleChart = InteractiveChartUtility.builder(baseChart)
+    .mouseWheelEnabled(true)      // Only enable mouse wheel
+    .tooltipsEnabled(false)       // Disable tooltips
+    .build();                     // Range/domain zoom defaults to true
 
-// WITH BUILDER: Self-documenting and flexible
-ChartPanel p = InteractiveChartUtility.builder(chart)
-    .mouseWheelEnabled(true)      // Only enable what we need
-    .tooltipsEnabled(false)
-    .build();</code></pre>
+// COMPARISON: Builder makes intent clearer than constructor overloading
+// Constructor: new ChartPanel(chart, zoomX, zoomY, mouseWheel, tooltips)
+// Builder:     builder(chart).domainZoomable(true).rangeZoomable(true)...
+</code></pre>
 
-<p><strong>Benefits:</strong> Improved readability, optional parameters, immutability, flexible configuration, self-documenting code.</p>
+<p><strong>Builder Pattern Benefits in System:</strong></p>
+<ul>
+<li><strong>Fluent API:</strong> Method chaining makes configuration readable and expressive</li>
+<li><strong>Flexible:</strong> Set only the options you need - rest use sensible defaults (domainZoom=true, etc.)</li>
+<li><strong>Self-Documenting:</strong> Method names clearly express intent (.domainZoomable(), .tooltipsEnabled())</li>
+<li><strong>Avoid Telescoping:</strong> No need for multiple constructors with different parameter combinations</li>
+<li><strong>Immutability-Friendly:</strong> Builder pattern enables creating immutable objects with many optional fields</li>
+<li><strong>Easy Maintenance:</strong> Adding new configuration options just requires new builder methods</li>
+</ul>
 
 <h3 id="advanced-java">7.3 Advanced Java Techniques</h3>
 
@@ -3779,9 +4510,10 @@ ChartPanel p = InteractiveChartUtility.builder(chart)
 
 <p><strong>Purpose:</strong> Use type parameters to write generic classes and methods, providing compile-time type safety and eliminating casting. This catches type errors early and makes code self-documenting.</p>
 
-<p><strong>Application in System:</strong></p>
+<h5>Application in System (Package: com.humanitarian.logistics)</h5>
 
 <pre><code class="language-java">// TYPE-SAFE COLLECTIONS: Compiler checks types at compile time
+// Source: Model.java, AnalysisPanel.java
 List&lt;Comment&gt; comments = new ArrayList&lt;&gt;();
 comments.add(new Comment(...));      // Type check: OK, Comment
 // comments.add("invalid");          // Type check: ERROR, String ≠ Comment
@@ -3791,9 +4523,10 @@ Map&lt;String, Integer&gt; sentimentCounts = new HashMap&lt;&gt;();
 sentimentCounts.put("POSITIVE", 42);  // Type check: String key, Integer value
 // sentimentCounts.put(123, "high");  // Type check: ERROR
 
-// GENERIC CLASSES: Use type parameters for flexibility
+// GENERIC CLASSES: Type parameters for flexibility
+// Source: TimeSeriesSentimentModule.java, Model.java
 public class TimeSeriesSentimentModule implements AnalysisModule {
-    // Map&lt;Category, Map&lt;Time, List&lt;Sentiment&gt;&gt;&gt;: Type-safe nested structure
+    // Map&lt;Category, Map&lt;Time, List&lt;Sentiment&gt;&gt;&gt;: Nested type-safe structure
     private Map&lt;ReliefItem.Category, Map&lt;LocalDateTime, List&lt;Sentiment&gt;&gt;&gt; timeSeriesData;
     
     public void addSentiment(ReliefItem.Category category, 
@@ -3805,115 +4538,123 @@ public class TimeSeriesSentimentModule implements AnalysisModule {
     }
 }
 
-// GENERIC METHODS: Type-safe method signatures
-public &lt;T extends Sentiment&gt; List&lt;T&gt; filterBySentiment(List&lt;T&gt; items) {
-    return items.stream().filter(item -&gt; item.isPositive()).collect(...);
+// Type-safe collection usage in Model
+public class Model {
+    private List&lt;Post&gt; posts;                      // Generic list
+    private List&lt;ModelListener&gt; listeners;        // Generic list of observers
+    private Map&lt;String, AnalysisModule&gt; analysisModules;  // Generic map
 }
 </code></pre>
 
-<p><strong>Benefits:</strong> Compile-time type safety, no casting, self-documenting, prevents runtime ClassCastException errors.</p>
+<p><strong>Benefits:</strong> Compile-time type safety, no casting needed, self-documenting code, prevents runtime ClassCastException errors.</p>
 
 <h4 id="streams">7.3.2 Streams API and Functional Programming</h4>
 
 <p><strong>Purpose:</strong> Process collections using functional-style transformations (map, filter, reduce) instead of imperative loops. Streams enable concise, declarative data processing with optional parallelization.</p>
 
-<p><strong>Application in System:</strong></p>
+<h5>Real System Example (Package: com.humanitarian.logistics.analysis)</h5>
 
-<pre><code class="language-java">// REAL SYSTEM EXAMPLE: SatisfactionAnalysisModule.calculateSentimentStats()
+<pre><code class="language-java">// STREAMS API: Functional data processing
+// Source: SatisfactionAnalysisModule.java (lines 45-75)
 private Map&lt;String, Object&gt; calculateSentimentStats(List&lt;Sentiment&gt; sentiments,
                                                       ReliefItem.Category category) {
     Map&lt;String, Object&gt; stats = new LinkedHashMap&lt;&gt;();
     
-    // FILTER + COUNT: Count positive, negative, neutral sentiments
+    // FILTER + COUNT: Count sentiments by type using streams
     long positiveCount = sentiments.stream()
-        .filter(Sentiment::isPositive)      // FILTER: keep only positive
-        .count();                           // COUNT: how many
+        .filter(Sentiment::isPositive)      // FILTER: keep only positive sentiments
+        .count();                           // COUNT: aggregate count
     
     long negativeCount = sentiments.stream()
-        .filter(Sentiment::isNegative)
+        .filter(Sentiment::isNegative)      // FILTER: keep only negative
         .count();
     
     long neutralCount = sentiments.stream()
-        .filter(Sentiment::isNeutral)
+        .filter(Sentiment::isNeutral)       // FILTER: keep only neutral
         .count();
     
-    // MAP + SUM: Calculate average confidence
+    // MAP + SUM: Extract and sum confidence scores
     double totalConfidence = sentiments.stream()
         .mapToDouble(Sentiment::getConfidence)  // MAP: extract confidence scores
-        .sum();                                 // SUM: total confidence
+        .sum();                                 // SUM: aggregate scores
     double avgConfidence = totalConfidence / sentiments.size();
     
-    // CALCULATE PERCENTAGES
-    double positivePercentage = (double) positiveCount / sentiments.size() * 100;
-    double negativePercentage = (double) negativeCount / sentiments.size() * 100;
-    
-    // BUILD RESULT
+    // BUILD RESULT: Accumulate statistics
     stats.put("category", category.getDisplayName());
     stats.put("positive_count", positiveCount);
     stats.put("negative_count", negativeCount);
     stats.put("neutral_count", neutralCount);
-    stats.put("positive_percentage", String.format("%.2f%%", positivePercentage));
-    stats.put("negative_percentage", String.format("%.2f%%", negativePercentage));
+    stats.put("positive_percentage", String.format("%.2f%%", 
+        (double) positiveCount / sentiments.size() * 100));
+    stats.put("negative_percentage", String.format("%.2f%%", 
+        (double) negativeCount / sentiments.size() * 100));
     stats.put("average_confidence", String.format("%.2f", avgConfidence));
     
-    return stats;  // Returns map with aggregated sentiment statistics
+    return stats;  // Map with aggregated sentiment statistics
 }
 </code></pre>
 
-<p><strong>Benefits:</strong> Concise, readable data processing, functional style (declarative not imperative), enables parallelization (parallelStream()), composable operations.</p>
+<p><strong>Benefits:</strong> Concise and readable data processing, functional (declarative) style, enables parallelization (parallelStream()), composable operations.</p>
 
 <h4 id="lambda">7.3.3 Lambda Expressions and Method References</h4>
 
 <p><strong>Purpose:</strong> Write concise anonymous functions (lambdas) and reference existing methods (method references) to enable functional programming and reduce boilerplate code.</p>
 
-<p><strong>Application in System:</strong></p>
+<h5>Lambda and Method Reference Examples (Package: com.humanitarian.logistics)</h5>
 
-<pre><code class="language-java">// EXAMPLE 1: LAMBDA in Streams - Filter with inline predicate
+<pre><code class="language-java">// EXAMPLE 1: LAMBDA in Streams with map() and collect()
+// Source: CrawlerRegistry.java (lines 61-64)
 public List&lt;String&gt; getCrawlerDisplayNames() {
-    // LAMBDA: c -> c.displayName
-    // METHOD REFERENCE: .toList() (equivalent to .collect(Collectors.toList()))
     return crawlerConfigs.values().stream()
         .map(c -> c.displayName)    // LAMBDA: extract displayName from each config
-        .toList();                  // COLLECT results into list
+        .collect(Collectors.toList());  // COLLECT: gather results
 }
 
-// EXAMPLE 2: METHOD REFERENCE for Sorting
+// EXAMPLE 2: METHOD REFERENCE for accessing properties
+// Source: Multiple locations in codebase
 comments.sort(Comparator.comparing(Comment::getCreatedAt));
-// Method reference: Comment::getCreatedAt (instead of c -> c.getCreatedAt())
+// METHOD REFERENCE: Comment::getCreatedAt (vs lambda: c -> c.getCreatedAt())
 
-// EXAMPLE 3: LAMBDA for Factory Pattern
+// EXAMPLE 3: CONSTRUCTOR REFERENCE for Factory Pattern
+// Source: CrawlerManager.java (lines 11-18)
 CrawlerRegistry registry = CrawlerRegistry.getInstance();
 registry.registerCrawler(
     new CrawlerRegistry.CrawlerConfig(
         "YOUTUBE",
         "YouTube",
         "Crawl videos and comments from YouTube",
-        YouTubeCrawler::new,        // CONSTRUCTOR REFERENCE: equivalent to () -> new YouTubeCrawler()
+        YouTubeCrawler::new,        // CONSTRUCTOR REFERENCE: creates new instances
         true, true, true
     )
 );
 
 // EXAMPLE 4: LAMBDA in Event Handlers
+// Source: View.java (lines 160-167)
 SwingUtilities.invokeLater(() -> {
-    analysisPanel.refresh();         // LAMBDA: Runnable implementation
+    advancedAnalysisPanel.refresh();     // LAMBDA: Runnable implementation
     commentPanel.refreshCommentTable();
+    statusLabel.setText("✓ Updated");
 });
 
-// EXAMPLE 5: LAMBDA in Streams - Complex filtering
+// EXAMPLE 5: LAMBDA with complex filtering logic
+// Source: SatisfactionAnalysisModule.java
 long positiveCount = sentiments.stream()
-    .filter(s -> s.getConfidence() > 0.7 && s.isPositive())  // COMPLEX LAMBDA
+    .filter(s -> s.getConfidence() > 0.7 && s.isPositive())  // LAMBDA: complex predicate
     .count();
 
-// EXAMPLE 6: Functional Stream Processing with Comments
-List&lt;String&gt; positiveAuthors = comments.stream()
-    .filter(c -> c.getSentiment().isPositive())     // LAMBDA: filter predicate
-    .sorted((c1, c2) -> c2.getCreatedAt()           // LAMBDA: comparator
+// EXAMPLE 6: Complex stream pipeline with multiple operations
+// Source: Analysis modules
+List&lt;String&gt; topPositiveAuthors = comments.stream()
+    .filter(c -> c.getSentiment().isPositive())              // LAMBDA: filter
+    .sorted((c1, c2) -> c2.getCreatedAt()                   // LAMBDA: comparator
                          .compareTo(c1.getCreatedAt()))
-    .map(Comment::getAuthor)                        // METHOD REFERENCE: getter
-    .collect(Collectors.toList());                  // COLLECT: gather results
+    .map(Comment::getAuthor)                                // METHOD REFERENCE: getter
+    .distinct()                                             // Remove duplicates
+    .limit(10)                                              // Take first 10
+    .collect(Collectors.toList());                          // COLLECT: gather results
 </code></pre>
 
-<p><strong>Benefits:</strong> Concise syntax (vs anonymous classes), functional programming support, enables higher-order functions, factory implementations without boilerplate.</p>
+<p><strong>Benefits:</strong> Concise syntax compared to anonymous classes, full functional programming support, enables higher-order functions, cleaner factory implementations without boilerplate.</p>
 
 <h4 id="dependency-injection">7.3.4 Dependency Injection</h4>
 
