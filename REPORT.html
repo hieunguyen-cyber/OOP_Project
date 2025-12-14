@@ -3559,70 +3559,141 @@ CrawlerManager.initializeCrawlers();     // Simple!
 
 <h4 id="adapter">7.2.7 Adapter Pattern - Interface Compatibility</h4>
 
-<p><strong>Purpose:</strong> Convert incompatible interfaces to compatible ones, allowing objects with different interfaces to work together. Acts as a bridge between two incompatible interfaces.</p>
+<p><strong>Purpose:</strong> Convert incompatible interfaces to compatible ones, allowing objects with different interfaces to work together. Acts as a bridge between two incompatible interfaces, enabling integration without modifying existing classes.</p>
 
-<p><strong>Implementation in System:</strong></p>
+<p><strong>Implementation in System - Two Key Uses:</strong></p>
 
-<pre><code class="language-java">// SWING ADAPTER: Built-in adapter for window events
-public class View extends JFrame {
+<h5>Part 1: WindowAdapter for Swing Event Handling (UI Package - View.java)</h5>
+
+<p>The View class (extending JFrame) uses Java's built-in <code>WindowAdapter</code> to handle window lifecycle events. WindowAdapter is a classic example of the Adapter pattern - it implements the full WindowListener interface but provides empty stub implementations for all methods. This allows the application to override only the windowClosing() event handler without needing to implement all WindowListener methods.</p>
+
+<p><strong>Actual Code from View.java:</strong></p>
+
+<pre><code class="language-java">public class View extends JFrame implements ModelListener {
+    private Model model;
+    // ... other fields ...
+
     public View(Model model) {
         this.model = model;
-        
-        // WindowAdapter: implements WindowListener with empty methods
-        // We only override methods we need
+        model.addModelListener(this);
+        initializeUI();
+    }
+
+    private void initializeUI() {
+        setTitle("🚨 Humanitarian Logistics Analysis System v2.0");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(1600, 950);
+        setLocationRelativeTo(null);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+
+        // ADAPTER PATTERN: WindowAdapter bridges WindowListener interface
+        // We only override windowClosing(), other methods inherited as empty
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
-            public void windowClosing(WindowEvent e) {
-                // Adapt: Window closing event → Model shutdown
-                model.shutdown();
-                PythonSentimentAnalyzer.stopPythonService();
-                System.exit(0);
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                cleanupAndExit();  // Adapt: Window closing → Model shutdown
+            }
+        });
+        // ... rest of UI initialization ...
+    }
+}</code></pre>
+
+<p><strong>How Adapter Works Here:</strong> WindowListener requires implementing 7 methods (windowOpened, windowClosed, windowClosing, windowIconified, windowDeiconified, windowActivated, windowDeactivated). WindowAdapter implements all 7 as empty methods, allowing View to inherit and override only windowClosing(). This eliminates boilerplate code and is a textbook Adapter pattern example.</p>
+
+<h5>Part 2: DataPersistenceManager as Database Adapter (Database Package - DataPersistenceManager.java)</h5>
+
+<p>DataPersistenceManager serves as an adapter layer between the application's high-level domain model (Post objects, DisasterManager) and SQLite's low-level JDBC interface. It adapts two incompatible interfaces:</p>
+
+<ul>
+<li><strong>High-level interface:</strong> Application domain objects (List&lt;Post&gt;, DisasterManager)</li>
+<li><strong>Low-level interface:</strong> Java serialization streams (ObjectInputStream/ObjectOutputStream)</li>
+</ul>
+
+<p><strong>Actual Code from DataPersistenceManager.java:</strong></p>
+
+<pre><code class="language-java">public class DataPersistenceManager {
+    private String postsFile;
+    private String disastersFile;
+    
+    private String getDataDir() {
+        File dataDir = new File("data");
+        if (!dataDir.exists()) {
+            dataDir.mkdirs();
+        }
+        return dataDir.getAbsolutePath();
+    }
+
+    public DataPersistenceManager() {
+        String dataDir = getDataDir();
+        this.postsFile = dataDir + "/posts.dat";
+        this.disastersFile = dataDir + "/disasters.dat";
+    }
+
+    // ADAPTER METHOD 1: Adapt domain objects → serialization format
+    public void savePosts(List&lt;Post&gt; posts) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(
+                new FileOutputStream(this.postsFile))) {
+            oos.writeObject(new ArrayList&lt;&gt;(posts));
+            System.out.println("✓ Posts saved: " + posts.size() + " items");
+        } catch (IOException e) {
+            System.err.println("Error saving posts: " + e.getMessage());
+        }
+    }
+
+    // ADAPTER METHOD 2: Adapt serialization format → domain objects
+    @SuppressWarnings("unchecked")
+    public List&lt;Post&gt; loadPosts() {
+        File file = new File(this.postsFile);
+        if (!file.exists()) {
+            return new ArrayList&lt;&gt;();
+        }
+
+        try (ObjectInputStream ois = new ObjectInputStream(
+                new FileInputStream(this.postsFile))) {
+            List&lt;Post&gt; posts = (List&lt;Post&gt;) ois.readObject();
+            System.out.println("✓ Posts loaded: " + posts.size() + " items");
+            return posts;
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Error loading posts: " + e.getMessage());
+            return new ArrayList&lt;&gt;();
+        }
+    }
+
+    // ADAPTER METHOD 3: Adapt DisasterManager ↔ serialization
+    public void saveDisasters(DisasterManager manager) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(
+                new FileOutputStream(this.disastersFile))) {
+            // Extract custom disasters from manager (interface)
+            // Convert to serializable Map (low-level format)
+            Set&lt;String&gt; defaultDisasters = new HashSet&lt;&gt;(
+                Arrays.asList("yagi", "matmo", "bualo", "koto", "fung-wong"));
+            
+            Map&lt;String, DisasterType&gt; customDisasters = new HashMap&lt;&gt;();
+            for (String name : manager.getAllDisasterNames()) {
+                if (!defaultDisasters.contains(name.toLowerCase())) {
+                    customDisasters.put(name, manager.getDisasterType(name));
+                }
             }
             
-            // Other methods inherited as empty: windowOpened, windowClosed, etc.
-        });
+            oos.writeObject(customDisasters);
+            System.out.println("✓ Disaster types saved: " 
+                + customDisasters.size() + " custom types");
+        } catch (IOException e) {
+            System.err.println("Error saving disasters: " + e.getMessage());
+        }
     }
-}
+}</code></pre>
 
-// CUSTOM ADAPTER: Adapt external HTML format to application interface
-public class YouTubeCommentAdapter {
-    private String rawJSON;  // From YouTube API
-    
-    public YouTubeCommentAdapter(String rawJSON) {
-        this.rawJSON = rawJSON;
-    }
-    
-    // ADAPTER METHOD: Convert YouTube JSON → Application Comment
-    public Comment adaptToComment() {
-        // Parse YouTube JSON
-        JSONObject json = new JSONObject(rawJSON);
-        
-        // Extract fields from YouTube format
-        String author = json.getJSONObject("authorDetails")
-                           .getString("displayName");
-        String content = json.getString("textDisplay");
-        LocalDateTime createdAt = LocalDateTime.parse(
-            json.getString("publishedAt")
-        );
-        
-        // Create application domain object
-        return new Comment(
-            UUID.randomUUID().toString(),
-            author,
-            content,
-            createdAt,
-            Sentiment.NEUTRAL
-        );
-    }
-}
+<p><strong>How Adapter Works Here:</strong> The Model class and Analysis modules work with high-level domain objects (List&lt;Post&gt;, DisasterManager). However, persistence to disk requires low-level serialization (ObjectInputStream/ObjectOutputStream). DataPersistenceManager adapts between these incompatible interfaces by converting domain objects ↔ serialized streams. The rest of the application never sees the serialization details - it simply calls savePosts()/loadPosts() and receives domain objects back.</p>
 
-// USAGE: Adapt external format to internal format
-YouTubeCommentAdapter adapter = new YouTubeCommentAdapter(youtubeJson);
-Comment appComment = adapter.adaptToComment();  // Convert!
-model.addCommentToPost(post, appComment);      // Now it's compatible
-</code></pre>
+<p><strong>Benefits of Both Adapter Implementations:</strong></p>
 
-<p><strong>Benefits:</strong> Integrates incompatible classes, reuses existing code without modification, bridges different interfaces, supports legacy code integration.</p>
+<ul>
+<li><strong>Separation of Concerns:</strong> WindowAdapter isolates event handling complexity; DataPersistenceManager isolates serialization logic</li>
+<li><strong>Code Reuse:</strong> WindowAdapter is built-in (no custom code needed); DataPersistenceManager reuses Java serialization without modification</li>
+<li><strong>Interface Bridging:</strong> Converts incompatible interfaces (WindowListener ↔ window events) and (domain model ↔ persistence format)</li>
+<li><strong>Maintainability:</strong> Changes to serialization format require only modifying DataPersistenceManager, not the entire application</li>
+</ul>
 
 <h4 id="builder">7.2.8 Builder Pattern - Fluent Object Construction</h4>
 
