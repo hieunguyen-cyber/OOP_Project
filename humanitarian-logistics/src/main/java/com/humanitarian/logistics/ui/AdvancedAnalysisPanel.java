@@ -884,6 +884,10 @@ public class AdvancedAnalysisPanel extends JPanel {
     private void analyzeAllPostsAction() {
         try {
             int analyzedCount = model.analyzeAllPosts();
+            
+            // Reload database connection to ensure latest data is available
+            getAllCommentsFromDatabase();
+            
             JOptionPane.showMessageDialog(
                 this,
                 "✓ Sentiment analysis complete!\n\n" +

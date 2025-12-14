@@ -42038,3 +42038,9 @@ Sentiment Analysis API Started: 2025-12-15 00:38:52
 [2025-12-15 00:41:19] 📊 SENTIMENT ANALYSIS | Text: 'bão yagi ko thể mạnh nổi haiyan đâu...' | Result: NEGATIVE (confidence: 0.3409, raw: 1 STAR)
 [2025-12-15 00:41:19] 📊 SENTIMENT ANALYSIS | Text: '🗣️:YAGI vẫn chưa Mạnh hơn người chị tên Linda😈...' | Result: NEGATIVE (confidence: 0.3619, raw: 1 STAR)
 [2025-12-15 00:41:19] 📊 SENTIMENT ANALYSIS | Text: 'Yagi gà mitag là vua...' | Result: NEUTRAL (confidence: 0.3487, raw: 3 STARS)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-15 00:42:51
+================================================================================
+
+[2025-12-15 00:42:52] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)
