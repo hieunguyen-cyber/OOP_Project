@@ -596,6 +596,10 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
                 System.err.println("Warning: Data not saved to database: " + dbEx.getMessage());
             }
             
+            loadMsg += "\n\n⚠️ IMPORTANT:\n" +
+                      "Go to Analysis tab and click \"Load/Visualize\"\n" +
+                      "BEFORE pressing \"Analyze All with Python\"";
+            
             JOptionPane.showMessageDialog(this, loadMsg, "Database Loaded", JOptionPane.INFORMATION_MESSAGE);
             refreshTable();
             
@@ -698,6 +702,7 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
                             "sentiment_type TEXT, " +
                             "sentiment_confidence REAL, " +
                             "relief_category TEXT, " +
+                            "disaster_type TEXT, " +
                             "FOREIGN KEY(post_id) REFERENCES posts(post_id) ON DELETE CASCADE" +
                             ")");
                         

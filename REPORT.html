@@ -987,7 +987,7 @@ logic - Implemented data export functionality (CSV format) - Integrated
 analysis results with UI visualization</p>
 <p><strong>Deliverables</strong>: Complete analysis pipeline for both
 problems, export functionality</p>
-<p><strong>Status</strong>: ✓ Completed with 31 curated dataset</p>
+<p><strong>Status</strong>: ✓ Completed with 31 curated dataset - <strong style="color: #d32f2f;">⚠️ IMPORTANT</strong>: After loading, click <strong>"Load/Visualize"</strong> in Analysis tab BEFORE "Analyze All with Python"</p>
 <h4
 id="phase-8-testing-quality-assurance-and-bug-fixes-december-7-9">Phase
 8: Testing, Quality Assurance, and Bug Fixes (December 7-9)</h4>
@@ -1497,7 +1497,7 @@ Database”</strong> to load pre-built sample database - Contains
 pre-curated posts from humanitarian logistics scenarios - Useful for:
 understanding patterns, demonstrating system capabilities -
 <strong>Warning</strong>: Replaces current database with sample
-dataset</p>
+dataset - <strong style="color: #d32f2f;">⚠️ IMPORTANT</strong>: After loading, click <strong>"Load/Visualize"</strong> in Analysis tab BEFORE "Analyze All with Python"</p>
 <p><strong>4. Reset Database</strong> - Click <strong>“Reset
 Database”</strong> to clear all data - All posts, comments, and analysis
 results deleted - Returns to empty database state -
@@ -1759,8 +1759,9 @@ pipeline
 <p><strong>Step 1: Data Collection</strong> (Choose One) - <strong>Web
 Crawler</strong>: Use “Crawl Web” tab with keywords to get YouTube
 comments - <strong>Sample Database</strong>: Use “Use Our Database” in
-Comments Manager (instant 31 posts) - <strong>Manual Entry</strong>: Use
+Comments Manager - <strong>Manual Entry</strong>: Use
 “Data Entry” tab to manually input custom data</p>
+<p><span style="color: #d32f2f;"><strong>⚠️ CRITICAL - Use Our Database:</strong></span> If you use <strong>"Use Our Database"</strong>, click <strong>"Load/Visualize"</strong> in the Analysis tab BEFORE "Analyze All with Python" to refresh the connection.</p>
 <p><strong>Step 2: Run Analysis</strong> 1. Go to
 <strong>Analysis</strong> tab 2. Click <strong>“Analyze All with Python
 API”</strong> button 3. Wait for completion (30-60 seconds) 4.
@@ -1771,8 +1772,8 @@ Type and Relief Category filters 2. Choose Bar or Pie chart 3. Click
 highest/lowest satisfaction</p>
 <p><strong>Step 4: Explore Problem 2 Results</strong> 1. Go to
 <strong>Problem 2 Temporal</strong> section 2. Choose view type (By
-Category, Overall Timeline, or Statistics) 3. Review how sentiment
-changed over time 4. Identify critical periods and trends</p>
+Category, Overall Timeline, or Statistics) 3. Click <strong>"Load/Visualize"</strong> to refresh data 4. Review how sentiment
+changed over time 5. Identify critical periods and trends</p>
 <p><strong>Step 5: Verify Raw Data</strong> 1. Go to <strong>Comments
 Manager</strong> tab 2. Scroll through and spot-check comments 3. Verify
 sentiment and category assignments 4. Edit any incorrect
@@ -1802,7 +1803,7 @@ unresponsive</strong>: Ensure Python API running on port 5001 -
 sample database - <strong>Charts show “No Data”</strong>: Click “Analyze
 All with Python API” first - <strong>Sentiment seems wrong</strong>:
 Check Comments Manager, edit incorrect ones - <strong>Application
-slow</strong>: Close other apps, try with smaller dataset</p>
+slow</strong>: Close other apps, try with smaller dataset - <strong style="color: #d32f2f;">⚠️ IMPORTANT</strong>: After loading, click <strong>"Load/Visualize"</strong> in Analysis tab BEFORE "Analyze All with Python"</p>
 <h2 id="collected-data-summarization">5. Collected Data Summarization</h2>
 
 <p><strong>Data Collection Overview</strong>: The following data was collected automatically from YouTube using the application's crawler functionality. A total of 900 posts and comments were gathered across 5 major disaster types (Yagi, Bualoi, Matmo, Koto, Fung-Wong). After automatic sentiment analysis and relief category classification, all data was manually reviewed and filtered to remove comments without relevant content, ensuring data quality and relevance to humanitarian logistics analysis.</p>

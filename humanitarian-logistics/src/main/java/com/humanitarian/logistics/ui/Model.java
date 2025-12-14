@@ -237,6 +237,13 @@ public class Model {
             System.err.println("Warning: Could not commit database changes: " + e.getMessage());
         }
         
+        // Wait for WAL to be flushed
+        try {
+            Thread.sleep(300);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
         // Reload database connection to ensure fresh data
         try {
             if (dbManager != null) {
