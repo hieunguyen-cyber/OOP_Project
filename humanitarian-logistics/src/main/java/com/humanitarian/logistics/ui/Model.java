@@ -200,6 +200,15 @@ public class Model {
                         comment.setSentiment(sentiment);
                     }
                     
+                    // Set disaster type from post if not already set
+                    if (comment.getDisasterType() == null || comment.getDisasterType().isEmpty()) {
+                        String disasterType = post.getDisasterKeyword();
+                        if (disasterType == null || disasterType.isEmpty()) {
+                            disasterType = "N/A";
+                        }
+                        comment.setDisasterType(disasterType);
+                    }
+                    
                     try {
                         if (dbManager != null) {
                             dbManager.updateComment(comment);
