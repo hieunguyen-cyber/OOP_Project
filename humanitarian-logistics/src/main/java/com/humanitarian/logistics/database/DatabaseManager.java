@@ -390,7 +390,7 @@ public class DatabaseManager {
                 
                 String disasterType = rs.getString("disaster_type");
                 if (disasterType != null && !disasterType.isEmpty()) {
-                    comment.setDisasterType(disasterType);
+                    comment.setDisasterType(disasterType.toLowerCase());
                 }
                 
                 comments.add(comment);
@@ -448,5 +448,26 @@ public class DatabaseManager {
         
         initialized = false;
         dbUrl = null;
+    }
+
+    public void reloadFromDisk() {
+        // Force close and reinitialize connection to ensure fresh data from disk
+        try {
+            if (connection != null && !connection.isClosed()) {
+                connection.close();
+            }
+        } catch (SQLException e) {
+            // Ignore errors
+        }
+        connection = null;
+        initialized = false;
+        dbUrl = null;
+        
+        // Reinitialize connection on next use
+        try {
+            ensureConnection();
+        } catch (SQLException | ClassNotFoundException e) {
+            System.err.println("Error reloading database connection: " + e.getMessage());
+        }
     }
 }

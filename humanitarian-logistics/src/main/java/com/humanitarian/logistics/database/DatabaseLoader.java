@@ -208,7 +208,7 @@ public class DatabaseLoader {
                     }
                     
                     String categoryStr = rs.getString("relief_category");
-                    if (categoryStr != null && !categoryStr.isEmpty()) {
+                    if (categoryStr != null && !categoryStr.isEmpty() && !categoryStr.equals("N/A")) {
                         try {
                             ReliefItem.Category category = ReliefItem.Category.valueOf(categoryStr);
                             comment.setReliefItem(new ReliefItem(category, categoryStr, 1));

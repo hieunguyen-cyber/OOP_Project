@@ -32,7 +32,7 @@ public class Model {
         this.listeners = new ArrayList<>();
         this.analysisModules = new LinkedHashMap<>();
         this.categoryClassifier = new PythonCategoryClassifier();
-        this.dbManager = new DatabaseManager();
+        this.dbManager = DatabaseManager.getInstance();  // Use singleton instance
         this.persistenceManager = new DataPersistenceManager();
 
         registerAnalysisModules();
@@ -181,9 +181,17 @@ public class Model {
             for (Comment comment : post.getComments()) {
                 try {
                     if (comment.getReliefItem() == null) {
-                        ReliefItem.Category category = categoryClassifier.classifyText(comment.getContent());
-                        if (category != null) {
-                            comment.setReliefItem(new ReliefItem(category, "ML-classified (Python)", 3));
+                        try {
+                            ReliefItem.Category category = categoryClassifier.classifyText(comment.getContent());
+                            if (category != null) {
+                                comment.setReliefItem(new ReliefItem(category, "ML-classified (Python)", 3));
+                            } else {
+                                // Fallback: set FOOD as default if classifier returns null
+                                comment.setReliefItem(new ReliefItem(ReliefItem.Category.FOOD, "Default fallback", 1));
+                            }
+                        } catch (Exception e) {
+                            // If Python API is down, set default FOOD category
+                            comment.setReliefItem(new ReliefItem(ReliefItem.Category.FOOD, "Default fallback", 1));
                         }
                     }
                     
@@ -195,6 +203,8 @@ public class Model {
                     try {
                         if (dbManager != null) {
                             dbManager.updateComment(comment);
+                            System.out.println("Updated comment " + comment.getCommentId() + " with relief_category: " + 
+                                (comment.getReliefItem() != null ? comment.getReliefItem().getCategory() : "null"));
                         }
                     } catch (Exception dbEx) {
                         System.err.println("Database error: " + dbEx.getMessage());
@@ -208,13 +218,39 @@ public class Model {
 
         notifyListeners();
         System.out.println("Batch analysis complete! Analyzed " + analyzedComments + "/" + totalComments + " comments");
+        
+        // Force commit database changes to ensure they're persisted
+        try {
+            if (dbManager != null) {
+                dbManager.commit();
+            }
+        } catch (Exception e) {
+            System.err.println("Warning: Could not commit database changes: " + e.getMessage());
+        }
+        
+        // Reload database connection to ensure fresh data
+        try {
+            if (dbManager != null) {
+                dbManager.reloadFromDisk();
+            }
+        } catch (Exception e) {
+            System.err.println("Warning: Could not reload database from disk: " + e.getMessage());
+        }
+        
+        // Save analyzed data to persistence
+        try {
+            persistenceManager.savePosts(posts);
+        } catch (Exception e) {
+            System.err.println("Warning: Could not save posts to persistence: " + e.getMessage());
+        }
+        
         return analyzedComments;
     }
 
     public void resetDatabaseConnection() {
         if (dbManager != null) {
             try {
-                dbManager.reset();
+                dbManager.reloadFromDisk();
             } catch (Exception e) {
                 System.err.println("Error resetting dbManager: " + e.getMessage());
             }

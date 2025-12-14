@@ -607,6 +607,22 @@ public class AdvancedAnalysisPanel extends JPanel {
         tabs.addTab("By Category (Temporal)", categoryTemporalPanel);
 
         JPanel temporalPanel = new JPanel(new BorderLayout());
+        
+        JPanel selectorPanel3 = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        selectorPanel3.setBorder(BorderFactory.createTitledBorder("Select Disaster Type for Temporal Analysis"));
+        
+        JLabel disasterLabel3 = new JLabel("Disaster Type: ");
+        JComboBox<String> disasterSelector3 = new JComboBox<>();
+        disasterSelector3.addItem("All Disasters");
+        List<String> disasterNames3 = DisasterManager.getInstance().getAllDisasterNames();
+        for (String name : disasterNames3) {
+            disasterSelector3.addItem(name);
+        }
+        disasterSelector3.setPreferredSize(new Dimension(120, 25));
+        
+        selectorPanel3.add(disasterLabel3);
+        selectorPanel3.add(disasterSelector3);
+        
         ChartPanel chartPanel = new ChartPanel(null);
         chartPanel.setPreferredSize(new Dimension(800, 350));
         InteractiveChartUtility.makeChartInteractive(chartPanel);
@@ -614,6 +630,7 @@ public class AdvancedAnalysisPanel extends JPanel {
         textArea.setEditable(false);
         textArea.setFont(new Font("Monospaced", Font.PLAIN, 9));
 
+        temporalPanel.add(selectorPanel3, BorderLayout.NORTH);
         temporalPanel.add(chartPanel, BorderLayout.CENTER);
         temporalPanel.add(new JScrollPane(textArea), BorderLayout.SOUTH);
 
@@ -621,6 +638,14 @@ public class AdvancedAnalysisPanel extends JPanel {
         btnTemporal.addActionListener(e -> {
             try {
                 List<Comment> allComments = getAllCommentsFromDatabase();
+                
+                String selectedDisaster = (String) disasterSelector3.getSelectedItem();
+                if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
+                    final String disasterFilter = selectedDisaster;
+                    allComments = allComments.stream()
+                        .filter(c -> disasterFilter.equals(c.getDisasterType()))
+                        .collect(Collectors.toList());
+                }
                 
                 DefaultCategoryDataset dataset = new DefaultCategoryDataset();
                 StringBuilder sb = new StringBuilder("=== TEMPORAL SENTIMENT ANALYSIS (Problem 2 - Comments) ===\n\n");
@@ -656,9 +681,14 @@ public class AdvancedAnalysisPanel extends JPanel {
             }
         });
 
-        JPanel buttonPanel = new JPanel();
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         buttonPanel.add(btnTemporal);
-        temporalPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        JPanel southPanel = new JPanel(new BorderLayout());
+        southPanel.add(buttonPanel, BorderLayout.NORTH);
+        southPanel.add(new JScrollPane(textArea), BorderLayout.CENTER);
+        temporalPanel.add(southPanel, BorderLayout.SOUTH);
+        
         tabs.addTab("Over Time", temporalPanel);
 
         JPanel commentPanel = new JPanel(new BorderLayout());
@@ -839,6 +869,8 @@ public class AdvancedAnalysisPanel extends JPanel {
         List<Comment> allComments = new ArrayList<>();
         try {
             com.humanitarian.logistics.database.DatabaseManager dbManager = com.humanitarian.logistics.database.DatabaseManager.getInstance();
+            // Force reload from disk to ensure we get latest data
+            dbManager.reloadFromDisk();
             allComments = dbManager.getAllCommentsFromDatabase();
         } catch (Exception e) {
             System.err.println("Could not load from database, using model fallback");

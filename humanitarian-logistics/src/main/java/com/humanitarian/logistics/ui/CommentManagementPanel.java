@@ -582,7 +582,7 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
             statusLabel.setText(loadMsg);
             
             try {
-                com.humanitarian.logistics.database.DatabaseManager dbMgr = new com.humanitarian.logistics.database.DatabaseManager();
+                com.humanitarian.logistics.database.DatabaseManager dbMgr = com.humanitarian.logistics.database.DatabaseManager.getInstance();
                 for (Post post : model.getPosts()) {
                     dbMgr.savePost(post);
                     String disasterType = post.getDisasterKeyword();
@@ -590,10 +590,13 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
                         disasterType = "N/A";
                     }
                     for (Comment comment : post.getComments()) {
-                        comment.setDisasterType(disasterType);
+                        if (comment.getDisasterType() == null || comment.getDisasterType().isEmpty()) {
+                            comment.setDisasterType(disasterType.toLowerCase());
+                        }
                         dbMgr.saveComment(comment);
                     }
                 }
+                dbMgr.commit();
                 loadMsg += "\n✓ Data saved to database";
             } catch (Exception dbEx) {
                 System.err.println("Warning: Data not saved to database: " + dbEx.getMessage());
@@ -708,6 +711,7 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
                             "sentiment_type TEXT, " +
                             "sentiment_confidence REAL, " +
                             "relief_category TEXT, " +
+                            "disaster_type TEXT, " +
                             "FOREIGN KEY(post_id) REFERENCES posts(post_id) ON DELETE CASCADE" +
                             ")");
                         
