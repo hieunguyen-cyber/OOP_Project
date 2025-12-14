@@ -98,7 +98,7 @@ public class AdvancedAnalysisPanel extends JPanel {
         textArea0.setEditable(false);
         textArea0.setFont(new Font("Monospaced", Font.PLAIN, 9));
         
-        JButton btnAnalyzeCategory = new JButton("Visualize");
+        JButton btnAnalyzeCategory = new JButton("Load/Visualize");
         btnAnalyzeCategory.addActionListener(e -> {
             try {
                 String selectedCategory = (String) categorySelector.getSelectedItem();
@@ -447,7 +447,7 @@ public class AdvancedAnalysisPanel extends JPanel {
         textArea2.setEditable(false);
         textArea2.setFont(new Font("Monospaced", Font.PLAIN, 9));
         
-        JButton btnAnalyzeCategoryTemporal = new JButton("Visualize");
+        JButton btnAnalyzeCategoryTemporal = new JButton("Load/Visualize");
         btnAnalyzeCategoryTemporal.addActionListener(e -> {
             try {
                 String selectedDisaster = (String) disasterSelector2.getSelectedItem();
@@ -884,10 +884,6 @@ public class AdvancedAnalysisPanel extends JPanel {
     private void analyzeAllPostsAction() {
         try {
             int analyzedCount = model.analyzeAllPosts();
-            
-            // Reload database connection to ensure latest data is available
-            getAllCommentsFromDatabase();
-            
             JOptionPane.showMessageDialog(
                 this,
                 "✓ Sentiment analysis complete!\n\n" +

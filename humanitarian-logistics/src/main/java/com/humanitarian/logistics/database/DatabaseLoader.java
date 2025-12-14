@@ -112,12 +112,6 @@ public class DatabaseLoader {
                 dbManager.commit();
             } catch (SQLException e) {
             }
-            
-            // Reload connection to ensure fresh data
-            try {
-                dbManager.reloadFromDisk();
-            } catch (Exception e) {
-            }
 
         } catch (Exception e) {
             System.err.println("Error saving to user database: " + e.getMessage());
