@@ -89,11 +89,64 @@ public class DatabaseManager {
                 try (Statement stmt = connection.createStatement()) {
                     stmt.execute("PRAGMA busy_timeout = 30000");
                     stmt.execute("PRAGMA foreign_keys = ON");
-                    stmt.execute("PRAGMA journal_mode = WAL");
+                    stmt.execute("PRAGMA journal_mode = DELETE");
+                    stmt.execute("PRAGMA synchronous = NORMAL");
+                    stmt.execute("PRAGMA cache_size = -64000");
+                    stmt.execute("PRAGMA temp_store = MEMORY");
                 }
+                
+                // Attempt database recovery if corrupted
+                try {
+                    checkDatabaseIntegrity();
+                } catch (SQLException e) {
+                    System.err.println("⚠ Database integrity check failed, attempting recovery...");
+                    recoverDatabase();
+                }
+                
                 createTables();
                 initialized = true;
             }
+        }
+    }
+    
+    private void checkDatabaseIntegrity() throws SQLException {
+        try (Statement stmt = connection.createStatement()) {
+            stmt.executeQuery("PRAGMA integrity_check");
+        }
+    }
+    
+    private void recoverDatabase() throws SQLException {
+        try {
+            if (connection != null && !connection.isClosed()) {
+                connection.close();
+            }
+        } catch (SQLException e) {
+        }
+        
+        // Remove corrupted database files
+        File mainDb = new File(dbFilePath);
+        File walFile = new File(dbFilePath + "-wal");
+        File shmFile = new File(dbFilePath + "-shm");
+        File journalFile = new File(dbFilePath + "-journal");
+        
+        if (mainDb.exists()) mainDb.delete();
+        if (walFile.exists()) walFile.delete();
+        if (shmFile.exists()) shmFile.delete();
+        if (journalFile.exists()) journalFile.delete();
+        
+        // Reconnect with clean database
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+        connection = DriverManager.getConnection(dbUrl);
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute("PRAGMA busy_timeout = 30000");
+            stmt.execute("PRAGMA foreign_keys = ON");
+            stmt.execute("PRAGMA journal_mode = DELETE");
+            stmt.execute("PRAGMA synchronous = NORMAL");
         }
     }
 
@@ -112,7 +165,8 @@ public class DatabaseManager {
                 "sentiment TEXT," +
                 "confidence REAL," +
                 "relief_category TEXT," +
-                "disaster_keyword TEXT)";
+                "disaster_keyword TEXT" + 
+                ")";
 
         String commentsTable = "CREATE TABLE IF NOT EXISTS comments (" +
                 "comment_id TEXT PRIMARY KEY," +
@@ -149,7 +203,30 @@ public class DatabaseManager {
             }
             pstmt.setString(8, reliefCategory);
             pstmt.setString(9, post.getDisasterKeyword());
-            pstmt.executeUpdate();
+            
+            try {
+                pstmt.executeUpdate();
+            } catch (SQLException e) {
+                if (e.getMessage().contains("SQLITE_IOERR")) {
+                    System.err.println("⚠ Database I/O error detected, attempting recovery...");
+                    recoverDatabase();
+                    // Retry the insert after recovery
+                    try (PreparedStatement retryPstmt = connection.prepareStatement(sql)) {
+                        retryPstmt.setString(1, post.getPostId());
+                        retryPstmt.setString(2, post.getContent());
+                        retryPstmt.setString(3, post.getAuthor());
+                        retryPstmt.setString(4, post.getSource());
+                        retryPstmt.setString(5, post.getCreatedAt().toString());
+                        retryPstmt.setString(6, post.getSentiment() != null ? post.getSentiment().getType().toString() : null);
+                        retryPstmt.setDouble(7, post.getSentiment() != null ? post.getSentiment().getConfidence() : 0);
+                        retryPstmt.setString(8, reliefCategory);
+                        retryPstmt.setString(9, post.getDisasterKeyword());
+                        retryPstmt.executeUpdate();
+                    }
+                } else {
+                    throw e;
+                }
+            }
         }
 
         for (Comment comment : post.getComments()) {
@@ -174,7 +251,30 @@ public class DatabaseManager {
             }
             pstmt.setString(8, commentReliefCategory);
             pstmt.setString(9, comment.getDisasterType());
-            pstmt.executeUpdate();
+            
+            try {
+                pstmt.executeUpdate();
+            } catch (SQLException e) {
+                if (e.getMessage().contains("SQLITE_IOERR")) {
+                    System.err.println("⚠ Database I/O error detected, attempting recovery...");
+                    recoverDatabase();
+                    // Retry the insert after recovery
+                    try (PreparedStatement retryPstmt = connection.prepareStatement(sql)) {
+                        retryPstmt.setString(1, comment.getCommentId());
+                        retryPstmt.setString(2, comment.getPostId());
+                        retryPstmt.setString(3, comment.getContent());
+                        retryPstmt.setString(4, comment.getAuthor());
+                        retryPstmt.setString(5, comment.getCreatedAt().toString());
+                        retryPstmt.setString(6, comment.getSentiment() != null ? comment.getSentiment().getType().toString() : null);
+                        retryPstmt.setDouble(7, comment.getSentiment() != null ? comment.getSentiment().getConfidence() : 0);
+                        retryPstmt.setString(8, commentReliefCategory);
+                        retryPstmt.setString(9, comment.getDisasterType());
+                        retryPstmt.executeUpdate();
+                    }
+                } else {
+                    throw e;
+                }
+            }
         }
     }
 
