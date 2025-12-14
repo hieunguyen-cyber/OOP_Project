@@ -135,11 +135,6 @@ public class AdvancedAnalysisPanel extends JPanel {
                         .filter(c -> c.getReliefItem() != null)
                         .collect(Collectors.groupingBy(c -> c.getReliefItem().getCategory()));
                     
-                    System.out.println("DEBUG: Categories found: " + byCategory.size());
-                    byCategory.forEach((category, categoryComments) -> {
-                        System.out.println("  - " + category.getDisplayName() + ": " + categoryComments.size() + " comments");
-                    });
-                    
                     byCategory.forEach((category, categoryComments) -> {
                         int total = categoryComments.size();
                         if (total == 0) return;
@@ -192,8 +187,6 @@ public class AdvancedAnalysisPanel extends JPanel {
                             if (neu != null) neuSum += neu.doubleValue();
                         }
                         
-                        System.out.println("DEBUG: Pie - posSum=" + posSum + ", negSum=" + negSum + ", neuSum=" + neuSum);
-                        
                         pieDataset.setValue("Positive", posSum);
                         pieDataset.setValue("Negative", negSum);
                         pieDataset.setValue("Neutral", neuSum);
@@ -225,8 +218,6 @@ public class AdvancedAnalysisPanel extends JPanel {
                         List<Comment> categoryComments = allComments.stream()
                             .filter(c -> c.getReliefItem() != null && c.getReliefItem().getCategory() == finalCategory)
                             .collect(Collectors.toList());
-                        
-                        System.out.println("DEBUG: Comments for category " + finalCategory.getDisplayName() + ": " + categoryComments.size());
                         
                         int total = categoryComments.size();
                         long positive = categoryComments.stream()

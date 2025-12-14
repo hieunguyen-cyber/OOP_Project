@@ -45,10 +45,7 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
 
     public CommentManagementPanel(Model model) {
         this.model = model;
-        try {
-            this.dbManager = new DatabaseManager();
-        } catch (Exception e) {
-        }
+        this.dbManager = DatabaseManager.getInstance();
         initializeUI();
         refreshTable();
         
@@ -619,13 +616,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
 
         if (confirm == JOptionPane.YES_OPTION) {
             try {
-
-                try {
-                    DatabaseManager tempManager = new DatabaseManager();
-                    tempManager.close();
-                } catch (Exception e) {
-                }
-                
                 Thread.sleep(300);
                 
                 String currentDir = System.getProperty("user.dir");

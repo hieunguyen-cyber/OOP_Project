@@ -111,6 +111,7 @@ public class DatabaseLoader {
             try {
                 dbManager.commit();
             } catch (SQLException e) {
+                // Commit failed - connection may be closed
             }
 
         } catch (Exception e) {
@@ -121,6 +122,7 @@ public class DatabaseLoader {
                 try {
                     dbManager.close();
                 } catch (SQLException e) {
+                    // Close failed - connection may be closed already
                 }
             }
         }
@@ -171,6 +173,7 @@ public class DatabaseLoader {
                         ReliefItem.Category category = ReliefItem.Category.valueOf(categoryStr);
                         post.setReliefItem(new ReliefItem(category, categoryStr, 1));
                     } catch (IllegalArgumentException e) {
+                        // Category not found - skip
                     }
                 }
                 
@@ -211,7 +214,6 @@ public class DatabaseLoader {
                 
                 if (targetPost != null) {
                     Comment comment = new Comment(commentId, postId, content, createdAt, author);
-                    
                     String sentimentStr = rs.getString("sentiment");
                     if (sentimentStr != null && !sentimentStr.isEmpty()) {
                         try {
@@ -219,6 +221,7 @@ public class DatabaseLoader {
                             double confidence = rs.getDouble("confidence");
                             comment.setSentiment(new Sentiment(sentimentType, confidence, content));
                         } catch (IllegalArgumentException | SQLException e) {
+                            // Sentiment parsing failed - skip
                         }
                     }
                     
@@ -228,6 +231,7 @@ public class DatabaseLoader {
                             ReliefItem.Category category = ReliefItem.Category.valueOf(categoryStr);
                             comment.setReliefItem(new ReliefItem(category, categoryStr, 1));
                         } catch (IllegalArgumentException e) {
+                            // Category not found - skip
                         }
                     }
                     
