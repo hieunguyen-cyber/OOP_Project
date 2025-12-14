@@ -304,7 +304,6 @@ public class AdvancedAnalysisPanel extends JPanel {
                 InteractiveChartUtility.enableChartInteractivity(chartPanel0);
                 textArea0.setText(sb.toString());
                 textArea0.setCaretPosition(0);
-                System.out.println("DEBUG: Analysis complete!");
             } catch (Exception ex) {
                 System.err.println("ERROR: " + ex.getMessage());
                 ex.printStackTrace();
