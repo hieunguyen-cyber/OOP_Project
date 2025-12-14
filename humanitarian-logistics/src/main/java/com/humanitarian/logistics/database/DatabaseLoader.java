@@ -89,15 +89,36 @@ public class DatabaseLoader {
                 Thread.sleep(200);
             }
 
-            dbManager = new DatabaseManager();
+            dbManager = DatabaseManager.getInstance();
             
             for (Post post : model.getPosts()) {
                 dbManager.savePost(post);
+                // Set default FOOD category for all comments from curated database
+                for (Comment comment : post.getComments()) {
+                    if (comment.getReliefItem() == null) {
+                        comment.setReliefItem(new ReliefItem(ReliefItem.Category.FOOD, "Default from curated DB", 1));
+                    }
+                }
             }
+            
+            // Save comments with default relief_category to database
+            for (Post post : model.getPosts()) {
+                for (Comment comment : post.getComments()) {
+                    dbManager.saveComment(comment);
+                }
+            }
+            
             try {
                 dbManager.commit();
             } catch (SQLException e) {
             }
+            
+            // Reload connection to ensure fresh data
+            try {
+                dbManager.reloadFromDisk();
+            } catch (Exception e) {
+            }
+
         } catch (Exception e) {
             System.err.println("Error saving to user database: " + e.getMessage());
             e.printStackTrace();
