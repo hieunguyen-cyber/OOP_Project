@@ -4251,3 +4251,157 @@ Sentiment Analysis API Started: 2025-12-13 22:42:19
 ================================================================================
 
 [2025-12-13 22:42:20] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-14 18:38:40
+================================================================================
+
+[2025-12-14 18:38:42] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-14 18:40:51
+================================================================================
+
+[2025-12-14 18:40:54] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-14 18:52:25
+================================================================================
+
+[2025-12-14 18:52:27] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-14 18:57:03
+================================================================================
+
+[2025-12-14 18:57:04] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-14 18:59:40
+================================================================================
+
+[2025-12-14 18:59:42] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-14 19:04:30
+================================================================================
+
+[2025-12-14 19:04:31] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)
+[2025-12-14 19:05:01] 📊 SENTIMENT ANALYSIS | Text: 'Yagi  vẫn là một cái gì đó 😨#xuhướng #xuhuong #baoyagi2024 #baowipha...' | Result: NEGATIVE (confidence: 0.4645, raw: 1 STAR)
+[2025-12-14 19:05:01] 🏷️  CATEGORY CLASSIFICATION | Text: 'Wow quá khủng khiếp wipha yagi...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:01] 🏷️  CATEGORY CLASSIFICATION | Text: 'Vãi hà nội hơn 100°C=)...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:01] 🏷️  CATEGORY CLASSIFICATION | Text: 'edit hay...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:01] 🏷️  CATEGORY CLASSIFICATION | Text: 'wipha gọi bằng điện thoại...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:01] 🏷️  CATEGORY CLASSIFICATION | Text: 'Tip , haiyan ☠️☠️☠️...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:01] 🏷️  CATEGORY CLASSIFICATION | Text: 'Nổi am ảnh của tôi...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:01] 🏷️  CATEGORY CLASSIFICATION | Text: 'Wipha😮 yagi😈...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:01] 🏷️  CATEGORY CLASSIFICATION | Text: 'cho tên nhạc với...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:01] 🏷️  CATEGORY CLASSIFICATION | Text: 'Wipha đã về Hà Nội đâu...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:01] 🏷️  CATEGORY CLASSIFICATION | Text: 'bão yagi ko thể mạnh nổi haiyan đâu...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:01] 🏷️  CATEGORY CLASSIFICATION | Text: 'Yagi gà mitag là vua...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:01] 🏷️  CATEGORY CLASSIFICATION | Text: '🗣️:YAGI vẫn chưa Mạnh hơn người chị tên Linda😈...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 📊 SENTIMENT ANALYSIS | Text: 'BÃO YAGI VS BÃO WIPHA...' | Result: NEUTRAL (confidence: 0.2663, raw: 3 STARS)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Bao wipha hai phong :😇
+
+Bao yagi hai phong :👹...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Bão wipha lạng Sơn 😇 
+Bão yagi lạng Sơn ☠️...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'wipha thì nhỏ Yagi thì to...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Haiyan ko bt 	sai...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Nàng nủ😢...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'yagi huyện thoại...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Nam mô Đại từ Đại Bi Hội Thượng Phật Bồ Tát.
+Nam mô A Di Đà Phật.
+Nam mô Đức Bổn sư Thích ca Mâu Ni ...' | Result: FOOD (1.0000)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Bão wipha Vừa qua có sức mạnh chỉ có cấp 8 giật cấp 10 còn siêu bão yagi năm ngoái có sức mạnh cấp 1...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Thêm bão kajiki rồi😢...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'T nhớ yagi lúc vô Bảo Yên Lào Cai chỗ t die 4 ng, còn làng nủ thì ối dồi ôi...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'yagi no da tro thanh bao wipha roi u...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'yagi > wipha...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Bão Wipha Ninh Bình😇
+
+
+ Bão Yagi  Ninh Bình😈👹...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 📊 SENTIMENT ANALYSIS | Text: 'Bão #yagi vs bão tràmi...' | Result: NEUTRAL (confidence: 0.2593, raw: 3 STARS)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Bn này thật sự so sánh 1 siêu bão cực khủng khiếp với 1 cơn bão lớn🗿...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'yagi đến hà nội xưởng bố tôi đổ cây dài 100 m...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Ông đứng đâu vậy...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Trà mi tuổi gì...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Tui nghe là sắp có bão số 1...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Bão yagi quật đổ cả xà cừ to mà bảo tuổi??????...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'tôi hỏi google thì google nói là yagi mạnh hơn...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Thk phân biệt vùng miền...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Thk trẻ con ng t ko muốn bão m cứ đi so đo baõ.Khi nào có bão khác t mong bão cuốn m đi qua nên trun...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 📊 SENTIMENT ANALYSIS | Text: 'cùng nhìn lại đường đi của bão Yagi...' | Result: POSITIVE (confidence: 0.4532, raw: 5 STARS)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Ngọt...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'May chỗ tôi ở dưới Bình Định cũ......' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Trận bão 11 bảo gì chắc chết luôn...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: '😂😂...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Đã bao nhiêu ngày còn bão 11 phó tiểu vương bảo rồi...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'chỗ tôi cũng vậy QUẢNG NINH...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Chỗ tôi bị 😢😢...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'VIEW CAO VẬY😊❤...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Nỏ thế...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'chỗ tôi cũng vậy BẮC NINH...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Chỗ tui cũng bị 😢😢😢😢😢😢😢😢😢...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Cái đó là game đừng lo nó có đồng xu kìa :))))...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Game này làm game gì vậy...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Chỗ tui bị xạo lở...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Chỗ tôi không có bão nên chill gay😂😂😂😊...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'ai  nhớ tip ko...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Sai đường đi còn báo đđ...' | Result: TRANSPORTATION (0.3333)
+[2025-12-14 19:05:02] 📊 SENTIMENT ANALYSIS | Text: '2024 vs Quá Khứ 💀 #bão #typhoon #hurricane #2024 #past #skull #yagi #milton #harvey #capcut #viral...' | Result: NEGATIVE (confidence: 0.2572, raw: 1 STAR)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Bão bth tôi gặp hôm nay wipha...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Bão mạnh nhất thời hiện đại vs bão mạnh nhất lịch sử
+
+Dô ik ten kài...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: '💀💀💀💀...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Fun fact bão milton 295KM/H gần như mạnh hơn bão ở quá khứ do thg chủ kênh bảo chỉ thua TIP 305/KM/H...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 📊 SENTIMENT ANALYSIS | Text: 'Bão số 10 &quot;Bualoi&quot; Hay Bựa Lòi? Và 15 Dị Tượng Siêu Bí Ẩn Mới Nhất 2025 | Nhanh Trí...' | Result: NEGATIVE (confidence: 0.2768, raw: 1 STAR)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'trời ơi khi nào chị mới chịu làm về kênh của 3 chị em tụi em thế chị ơi, em hóng chị làm lâu lắm rồi...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Chị biết cobaoso13lakalmaegi❤ 4:33...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: '4:48 🤣🤣🤣🤣🤣🤣...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'đó là con người...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: '1:09 biến đổi gen...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: '"bựa lòi"👽🗿...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Chị làm về grow a garde đi ❤❤...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Em là fan của chị đó...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Hihi...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'ma là dã...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Đầu chị ơi...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'som...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Thứ hai nè...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'E❤❤❤❤❤❤🎉...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Bão búa lôi hả=)?
+Đó bualoi con gì=))...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'câu số 2 là fake đấy...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Bão Bualoi không chỉ có nghĩa là chè trôi Thái mà còn đặt tên của cơn bão như:
++ Bão Kajiki có nghĩa...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: '1:05 Do nhiễm Virus papilloma (CRPV) gây ra các khối u giống như sừng trên đầu, mặt hoặc tai của chú...' | Result: FOOD (0.6667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Chị ơi con cho bị bay rồi...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:02] 🏷️  CATEGORY CLASSIFICATION | Text: 'Chị nhanh trí ơi, bualoi sao tên nó kì vậy?...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:03] 📊 SENTIMENT ANALYSIS | Text: 'Giải mã lí do loại tên bão bua loi ra khỏi danh sách bão quốc tế #docvithegioi #tintuc #baobualoi...' | Result: NEGATIVE (confidence: 0.4400, raw: 1 STAR)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: 'Việc này người ta tránh lặp lại để tránh xui xẻo một lần nữa...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: 'Bão Yagi, catrina , bualoi sẽ không bao giờ dc suất hiện lại nữa. Yagi tên thì dễ thương mà nó quá t...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: 'Tui nghĩ là tránh dùng lại để khi những người nghiên cứu muốn tìm lại thông tin xem mức...' | Result: TRANSPORTATION (0.3333)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: '😢😢😢 Mới có 1,2 năm thôi mà hết Yagi, Trà Mi rồi Bualo bị xóa tên rồi, mong rằng không có thêm cơn bã...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: 'Yagi cũng gây thiệt lớn cũng gần Bualoi mà không thấy ai nói bị xoá...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: 'Ta lại đặt lại tên bằng tên lóng ý nghĩa vẫn vậy...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: 'Tên bão mà đc xóa thì: 1. Thảm họa rất nghiêm trọng, 2. Thiệt hại quá lớn. Với ae nào chưa cảm nhận ...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: 'Đã có  búa lôi sợ là sẽ xuất hiện  thiên lôi 😂...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: 'còn nhiều bão mạnh lắm.........' | Result: FOOD (0.1667)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: 'TĐ đang tạo kháng sinh virus . Chờ vài năm nữa băng tan 2 cực vui như ngày 2012😂😂😂...' | Result: FOOD (0.3333)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: 'Ước j cơn bão sẽ ko tồn tại trong vài năm tới...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: 'Bão Bùa Lợi 😂😂😂...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: 'Bão HALONG đang vào chúc mọi người bình an😢...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: 'Bão hayan yagi là huyền thoại...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: 'Có xóa sổ cỡ nào đi nữa thì đó vẫn là tự nhiên thôi....' | Result: FOOD (0.1667)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: 'Quá đã thêm quả thiên thạch đâm vô trái đất nữa là đẹp...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: 'vừa mới nói bão mạnh là không nhắc tới nhưng lúc sau thì nói...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: 'Thế giới khoẻ mạnh bình an rồi sẽ đủ đầy hạnh phúc...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: 'Nguyên 1 cơn bão tàn phá cũng chỉ ngang tâm vài cái đường lớn các cụ xây thôi :))))...' | Result: TRANSPORTATION (0.3333)
+[2025-12-14 19:05:03] 🏷️  CATEGORY CLASSIFICATION | Text: 'Bão tên thái thiệt hại quá nặng nề...' | Result: FOOD (0.1667)
+[2025-12-14 19:05:03] 📊 SENTIMENT ANALYSIS | Text: 'Sức tàn phá của Bão Bua Loi Thật Đáng Sợ #tintuc #tinnong24h #thoisu24h #news...' | Result: NEGATIVE (confidence: 0.6911, raw: 1 STAR)
+[2025-12-14 19:05:03] 📊 SENTIMENT ANALYSIS | Text: 'Bão Bua Loi sức tàn phá khủng khiếp #thoisu #tintuc #tinnong24h #24h #news...' | Result: NEGATIVE (confidence: 0.6749, raw: 1 STAR)
+[2025-12-14 19:05:03] 📊 SENTIMENT ANALYSIS | Text: 'Bão Búa Lôi , số 10 #bualoi...' | Result: POSITIVE (confidence: 0.5412, raw: 5 STARS)
+[2025-12-14 19:05:11] 📊 SENTIMENT ANALYSIS | Text: 'This post discusses humanitarian logistics efforts and relief operations in response to recent natur...' | Result: POSITIVE (confidence: 0.5772, raw: 4 STARS)
