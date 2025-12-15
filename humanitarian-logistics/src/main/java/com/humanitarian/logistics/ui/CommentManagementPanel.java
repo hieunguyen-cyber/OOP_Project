@@ -582,12 +582,15 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
                 com.humanitarian.logistics.database.DatabaseManager dbMgr = new com.humanitarian.logistics.database.DatabaseManager();
                 for (Post post : model.getPosts()) {
                     dbMgr.savePost(post);
-                    String disasterType = post.getDisasterKeyword();
-                    if (disasterType == null || disasterType.isEmpty()) {
-                        disasterType = "N/A";
-                    }
                     for (Comment comment : post.getComments()) {
-                        comment.setDisasterType(disasterType);
+                        // Only set disaster type if comment doesn't have one yet
+                        if (comment.getDisasterType() == null || comment.getDisasterType().isEmpty()) {
+                            String disasterType = post.getDisasterKeyword();
+                            if (disasterType == null || disasterType.isEmpty()) {
+                                disasterType = "N/A";
+                            }
+                            comment.setDisasterType(disasterType);
+                        }
                         dbMgr.saveComment(comment);
                     }
                 }
