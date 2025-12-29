@@ -2151,7 +2151,7 @@ classDiagram
     YouTubePost --|> Post
     
     %% Composition: Post contains multiple Comments
-    Post "1" --* Comment
+    Post "1" *-- Comment
     
     %% Association: Post uses Sentiment
     Post --> Sentiment
@@ -2159,11 +2159,11 @@ classDiagram
     %% Association: Post uses ReliefItem
     Post --> ReliefItem
     
-    %% Enum relationship: Sentiment contains SentimentType
-    Sentiment --> SentimentType
+    %% Composition: Sentiment contains SentimentType
+    Sentiment *-- SentimentType
     
-    %% Enum relationship: ReliefItem contains Category
-    ReliefItem --> Category
+    %% Composition: ReliefItem contains Category
+    ReliefItem *-- Category
     
     %% Association: Comment uses Sentiment
     Comment --> Sentiment
@@ -2174,8 +2174,8 @@ classDiagram
     %% Association: YouTubePost uses DisasterType
     YouTubePost --> DisasterType
     
-    %% Association: DisasterManager uses DisasterType
-    DisasterManager --> DisasterType
+    %% Composition: DisasterManager manages DisasterType
+    DisasterManager *-- DisasterType
 
 </div>
 <p><strong>Design Architecture and Inheritance Strategy</strong>: The Model package employs an inheritance hierarchy combined with composition and aggregation patterns. The Post class is an abstract base class that defines core post properties: <strong>postId, content, createdAt, author, source</strong> (all immutable final fields), and <strong>sentiment, reliefItem, disasterKeyword, comments</strong> (mutable fields). The Post class implements Serializable and Comparable interfaces, enabling persistence and ordering. The YouTubePost class extends Post to add YouTube-specific attributes: <strong>channelId, likes, views, disasterType</strong>. This inheritance design allows polymorphic treatment of different post types.</p>
@@ -2335,14 +2335,20 @@ classDiagram
     CommentManagementPanel --> DatabaseManager
     AdvancedAnalysisPanel --> Model
     
-    %% Observer pattern: Model notifies listeners
-    Model "1" --> "*" ModelListener
+    %% Observer pattern: Model notifies listeners (Aggregation)
+    Model "1" o-- "*" ModelListener
     
     %% Association: Model uses other services
     Model --> SentimentAnalyzer
     Model --> DatabaseManager
-    Model --> DataPersistenceManager
-    Model --> AnalysisModule
+    
+    %% Composition: Model creates and manages these
+    Model *-- DataPersistenceManager
+    Model *-- AnalysisModule
+    
+    %% Realization: UI components implement ModelListener
+    View ..|> ModelListener
+    CommentManagementPanel ..|> ModelListener
 
 </div>
 <p><strong>MVC Architecture Implementation</strong>: The MVC pattern in

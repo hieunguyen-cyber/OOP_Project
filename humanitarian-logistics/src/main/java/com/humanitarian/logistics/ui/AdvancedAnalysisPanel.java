@@ -115,9 +115,15 @@ public class AdvancedAnalysisPanel extends JPanel {
                 List<Comment> allComments = getAllCommentsFromDatabase();
                 
                 if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
-                    final String disasterFilter = selectedDisaster;
+                    final String disasterFilter = DisasterType.normalize(selectedDisaster);
                     allComments = allComments.stream()
-                        .filter(c -> disasterFilter.equals(c.getDisasterType()))
+                        .filter(c -> {
+                            String commentDisaster = c.getDisasterType();
+                            if (commentDisaster == null || commentDisaster.isEmpty()) {
+                                return false;
+                            }
+                            return disasterFilter.equals(DisasterType.normalize(commentDisaster));
+                        })
                         .collect(Collectors.toList());
                 }
                 
@@ -446,26 +452,14 @@ public class AdvancedAnalysisPanel extends JPanel {
                 List<Comment> allComments = getAllCommentsFromDatabase();
                 
                 if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
-                    final String disasterFilter = selectedDisaster;
-                    allComments = allComments.stream()
-                        .filter(c -> disasterFilter.equals(c.getDisasterType()))
-                        .collect(Collectors.toList());
-                }
-                
-                if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
-                    final String disasterName = selectedDisaster;
+                    final String disasterFilter = DisasterType.normalize(selectedDisaster);
                     allComments = allComments.stream()
                         .filter(c -> {
-                            for (Post post : model.getPosts()) {
-                                if (post.getComments().contains(c)) {
-                                    if (post instanceof YouTubePost) {
-                                        YouTubePost ytPost = (YouTubePost) post;
-                                        DisasterType type = ytPost.getDisasterType();
-                                        return type != null && type.getName().equals(disasterName);
-                                    }
-                                }
+                            String commentDisaster = c.getDisasterType();
+                            if (commentDisaster == null || commentDisaster.isEmpty()) {
+                                return false;
                             }
-                            return false;
+                            return disasterFilter.equals(DisasterType.normalize(commentDisaster));
                         })
                         .collect(Collectors.toList());
                 }
@@ -616,24 +610,27 @@ public class AdvancedAnalysisPanel extends JPanel {
         ChartPanel chartPanel = new ChartPanel(null);
         chartPanel.setPreferredSize(new Dimension(800, 350));
         InteractiveChartUtility.makeChartInteractive(chartPanel);
+        
         JTextArea textArea = new JTextArea(8, 50);
         textArea.setEditable(false);
         textArea.setFont(new Font("Monospaced", Font.PLAIN, 9));
-
-        temporalPanel.add(selectorPanel3, BorderLayout.NORTH);
-        temporalPanel.add(chartPanel, BorderLayout.CENTER);
-        temporalPanel.add(new JScrollPane(textArea), BorderLayout.SOUTH);
-
-        JButton btnTemporal = new JButton("Refresh");
-        btnTemporal.addActionListener(e -> {
+        
+        // Create Runnable for updating chart
+        Runnable updateChart = () -> {
             try {
                 List<Comment> allComments = getAllCommentsFromDatabase();
                 
                 String selectedDisaster = (String) disasterSelector3.getSelectedItem();
                 if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
-                    final String disasterFilter = selectedDisaster;
+                    final String disasterFilter = DisasterType.normalize(selectedDisaster);
                     allComments = allComments.stream()
-                        .filter(c -> disasterFilter.equals(c.getDisasterType()))
+                        .filter(c -> {
+                            String commentDisaster = c.getDisasterType();
+                            if (commentDisaster == null || commentDisaster.isEmpty()) {
+                                return false;
+                            }
+                            return disasterFilter.equals(DisasterType.normalize(commentDisaster));
+                        })
                         .collect(Collectors.toList());
                 }
                 
@@ -669,7 +666,17 @@ public class AdvancedAnalysisPanel extends JPanel {
             } catch (Exception ex) {
                 textArea.setText("Error: " + ex.getMessage());
             }
-        });
+        };
+        
+        // Add listener to automatically update when disaster selection changes
+        disasterSelector3.addActionListener(e -> updateChart.run());
+
+        temporalPanel.add(selectorPanel3, BorderLayout.NORTH);
+        temporalPanel.add(chartPanel, BorderLayout.CENTER);
+        temporalPanel.add(new JScrollPane(textArea), BorderLayout.SOUTH);
+
+        JButton btnTemporal = new JButton("Refresh");
+        btnTemporal.addActionListener(e -> updateChart.run());
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         buttonPanel.add(btnTemporal);
@@ -778,9 +785,15 @@ public class AdvancedAnalysisPanel extends JPanel {
                 
                 List<Comment> allComments = getAllCommentsFromDatabase();
                 if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
-                    final String disasterFilter = selectedDisaster;
+                    final String disasterFilter = DisasterType.normalize(selectedDisaster);
                     allComments = allComments.stream()
-                        .filter(c -> disasterFilter.equals(c.getDisasterType()))
+                        .filter(c -> {
+                            String commentDisaster = c.getDisasterType();
+                            if (commentDisaster == null || commentDisaster.isEmpty()) {
+                                return false;
+                            }
+                            return disasterFilter.equals(DisasterType.normalize(commentDisaster));
+                        })
                         .collect(Collectors.toList());
                 }
                 
