@@ -78130,3 +78130,9 @@ Sentiment Analysis API Started: 2025-12-31 13:05:58
 [2025-12-31 13:07:42] 📊 SENTIMENT ANALYSIS | Text: 'NAM MÔ A DI ĐÀ PHẬT 🙏🙏🙏 nguyện cầu cho cơn bão không gây ảnh hưởng nặng nề và tất cả mọi người đều đ...' | Result: NEGATIVE (confidence: 0.6001, raw: 1 STAR)
 [2025-12-31 13:07:42] 🏷️  CATEGORY CLASSIFICATION | Text: 'Điều mà xung đột Thái- CPC thì VN có lợi khi Thái đánh CPC để xóa bỏ các khu tự trị nếu dừng lại thì...' | Result: FOOD (0.3333)
 [2025-12-31 13:07:42] 📊 SENTIMENT ANALYSIS | Text: 'Điều mà xung đột Thái- CPC thì VN có lợi khi Thái đánh CPC để xóa bỏ các khu tự trị nếu dừng lại thì...' | Result: NEGATIVE (confidence: 0.3344, raw: 1 STAR)
+
+================================================================================
+Sentiment Analysis API Started: 2026-01-05 19:13:43
+================================================================================
+
+[2026-01-05 19:13:45] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)

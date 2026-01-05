@@ -673,7 +673,6 @@ public class AdvancedAnalysisPanel extends JPanel {
 
         temporalPanel.add(selectorPanel3, BorderLayout.NORTH);
         temporalPanel.add(chartPanel, BorderLayout.CENTER);
-        temporalPanel.add(new JScrollPane(textArea), BorderLayout.SOUTH);
 
         JButton btnTemporal = new JButton("Refresh");
         btnTemporal.addActionListener(e -> updateChart.run());
