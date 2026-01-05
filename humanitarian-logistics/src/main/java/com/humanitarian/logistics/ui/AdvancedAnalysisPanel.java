@@ -885,27 +885,37 @@ public class AdvancedAnalysisPanel extends JPanel {
     }
 
     private void analyzeAllPostsAction() {
-        try {
-            int analyzedCount = model.analyzeAllPosts();
-            JOptionPane.showMessageDialog(
-                this,
-                "✓ Sentiment analysis complete!\n\n" +
-                "Analyzed: " + analyzedCount + " posts via Python API\n\n" +
-                "Sentiments updated in memory and saved to database.\n" +
-                "Click 'Problem 1' or 'Problem 2' to view analysis.",
-                "Analysis Complete",
-                JOptionPane.INFORMATION_MESSAGE
-            );
-
-            mainTabs.repaint();
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(
-                this,
-                "Error during analysis:\n" + e.getMessage() + "\n\n" +
-                "Make sure Python API is running: python sentiment_api.py",
-                "Analysis Error",
-                JOptionPane.ERROR_MESSAGE
-            );
-        }
+        Thread analysisThread = new Thread(() -> {
+            try {
+                int analyzedCount = model.analyzeAllPosts();
+                
+                // Show result on EDT (Event Dispatch Thread)
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(
+                        AdvancedAnalysisPanel.this,
+                        "✓ Sentiment analysis complete!\n\n" +
+                        "Analyzed: " + analyzedCount + " comments via Python API\n\n" +
+                        "Sentiments updated in memory and saved to database.\n" +
+                        "Click 'Problem 1' or 'Problem 2' to view analysis.",
+                        "Analysis Complete",
+                        JOptionPane.INFORMATION_MESSAGE
+                    );
+                    mainTabs.repaint();
+                });
+            } catch (Exception e) {
+                // Show error on EDT
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(
+                        AdvancedAnalysisPanel.this,
+                        "Error during analysis:\n" + e.getMessage() + "\n\n" +
+                        "Make sure Python API is running: python sentiment_api.py",
+                        "Analysis Error",
+                        JOptionPane.ERROR_MESSAGE
+                    );
+                });
+            }
+        });
+        analysisThread.setDaemon(false);
+        analysisThread.start();
     }
 }
